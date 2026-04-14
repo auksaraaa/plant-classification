@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Leaf, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import Logo from "./Logo";
 
 const navItems = [
   { path: "/", label: "หน้าแรก" },
@@ -16,9 +17,8 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <Leaf className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold text-primary">พรรณไม้ไทย</span>
+        <Link to="/" className="flex items-center">
+          <Logo size="md" showText={true} />
         </Link>
 
         {/* Desktop */}

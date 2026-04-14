@@ -1,14 +1,13 @@
 import { Link } from "react-router-dom";
-import { Leaf } from "lucide-react";
+import Logo from "./Logo";
 
 const Footer = () => (
   <footer className="border-t bg-secondary/50 mt-16">
     <div className="container py-10">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Leaf className="h-5 w-5 text-primary" />
-            <span className="font-bold text-primary">พรรณไม้ไทย</span>
+          <div className="mb-3">
+            <Logo size="sm" showText={true} />
           </div>
           <p className="text-sm text-muted-foreground">
             แหล่งรวมข้อมูลพรรณไม้ สำหรับผู้รักต้นไม้ทุกคน
