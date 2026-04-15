@@ -22,12 +22,23 @@ export const useLineAuth = (liffId: string): UseLineAuthReturn => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profile, setProfile] = useState<LineProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [liffReady, setLiffReady] = useState(false);
 
   // Initialize LIFF
   useEffect(() => {
     const initializeLiff = async () => {
       try {
+        // Ensure liffId is not empty
+        if (!liffId || liffId.trim() === '') {
+          const errorMsg = `Invalid liffId: "${liffId}". Please check VITE_LINE_LIFF_ID in .env.local`;
+          console.error(errorMsg);
+          setError(errorMsg);
+          return;
+        }
+
+        console.log('Initializing LIFF with ID:', liffId);
         await liff.init({ liffId });
+        setLiffReady(true);
 
         if (liff.isLoggedIn()) {
           setIsLoggedIn(true);
@@ -46,17 +57,24 @@ export const useLineAuth = (liffId: string): UseLineAuthReturn => {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize LIFF';
         setError(errorMessage);
         console.error('LIFF initialization error:', err);
+        setLiffReady(false);
       }
     };
 
-    if (liffId) {
+    if (liffId && liffId.trim() !== '') {
       initializeLiff();
+    } else {
+      console.warn('liffId is empty or not provided');
+      setError('liffId is not configured');
     }
   }, [liffId]);
 
   const login = useCallback(async () => {
     try {
       setIsLoading(true);
+      if (!liffReady) {
+        throw new Error('LIFF is not initialized yet. Please check your LIFF ID configuration.');
+      }
       if (!liff.isLoggedIn()) {
         liff.login({ redirectUri: window.location.href });
       }
@@ -67,7 +85,7 @@ export const useLineAuth = (liffId: string): UseLineAuthReturn => {
       console.error('Login error:', err);
       setIsLoading(false);
     }
-  }, []);
+  }, [liffReady]);
 
   const logout = useCallback(() => {
     try {

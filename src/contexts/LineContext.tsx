@@ -21,6 +21,14 @@ interface LineContextType {
 const LineContext = createContext<LineContextType | undefined>(undefined);
 
 export const LineProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Log environment variables for debugging
+  React.useEffect(() => {
+    console.log('LineProvider mounted');
+    console.log('lineConfig.liffId:', lineConfig.liffId);
+    console.log('lineConfig.channelId:', lineConfig.channelId);
+    console.log('import.meta.env.VITE_LINE_LIFF_ID:', import.meta.env.VITE_LINE_LIFF_ID);
+  }, []);
+
   const lineAuth = useLineAuth(lineConfig.liffId);
   const { firebaseProfile, isLoading: isFirebaseLoading } = useFirebaseLineProfile(lineAuth.profile);
 
