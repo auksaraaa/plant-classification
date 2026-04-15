@@ -1,7 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getAuth, signInAnonymously } from 'firebase/auth';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -22,17 +21,5 @@ export const db = getFirestore(app);
 
 // Initialize Cloud Storage and get a reference to the service
 export const storage = getStorage(app);
-
-// Initialize Firebase Authentication
-export const auth = getAuth(app);
-
-// Initialize anonymous authentication
-signInAnonymously(auth)
-  .then(() => {
-    console.log('✅ Firebase Anonymous Auth initialized');
-  })
-  .catch((error) => {
-    console.error('❌ Failed to initialize Firebase Anonymous Auth:', error);
-  });
 
 export default app;

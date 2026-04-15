@@ -1,17 +1,30 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Search as SearchIcon } from "lucide-react";
 import { plants, categories } from "@/data/plants";
 import PlantCard from "@/components/PlantCard";
 import { Button } from "@/components/ui/button";
+import { useLineContext } from "@/contexts/LineContext";
+import { lineConfig, validateLineConfig } from "@/config/line-config";
+import liff from "@line/liff";
 
 const Search = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isLoggedIn, isLoading: authLoading } = useLineContext();
   const initialSearch = searchParams.get("q") || "";
   
   const [search, setSearch] = useState(initialSearch);
   const [category, setCategory] = useState("ทั้งหมด");
+
+  // Force login
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      if (validateLineConfig()) {
+        liff.login({ redirectUri: window.location.href });
+      }
+    }
+  }, [isLoggedIn, authLoading]);
 
   const filtered = useMemo(() => {
     return plants.filter((p) => {
@@ -33,6 +46,16 @@ const Search = () => {
       handleSearch();
     }
   };
+
+  // Show loading while authenticating
+  if (authLoading || !isLoggedIn) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <p className="text-muted-foreground">กำลังเข้าสู่ระบบ...</p>
+      </div>
+    );
+  }
 
   return (
     <div>

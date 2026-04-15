@@ -5,7 +5,7 @@ const bottomNavItems = [
   { path: "/", label: "หน้าแรก", icon: Home },
   { path: "/search", label: "ค้นหา", icon: Search },
   { path: "/about", label: "เกี่ยวกับเรา", icon: Info },
-  { path: "/login", label: "โปรไฟล์", icon: User },
+  { path: "/profile", label: "โปรไฟล์", icon: User },
 ];
 
 const BottomNav = () => {

@@ -8,7 +8,7 @@ const navItems = [
   { path: "/search", label: "ค้นหา" },
   { path: "/how-to-use", label: "วิธีใช้งาน" },
   { path: "/about", label: "เกี่ยวกับเรา" },
-  { path: "/login", label: "เข้าสู่ระบบ" },
+  { path: "/profile", label: "โปรไฟล์" },
 ];
 
 const Navbar = () => {

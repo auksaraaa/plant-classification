@@ -1,6 +1,10 @@
-import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Leaf, Flower2, Cherry, Ruler, Droplets } from "lucide-react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Leaf, Flower2, Cherry, Ruler, Droplets, Loader } from "lucide-react";
+import { useEffect } from "react";
 import { plants } from "@/data/plants";
+import { useLineContext } from "@/contexts/LineContext";
+import { lineConfig, validateLineConfig } from "@/config/line-config";
+import liff from "@line/liff";
 
 const icons = {
   leaf: Leaf,
@@ -20,7 +24,27 @@ const labels: Record<string, string> = {
 
 const PlantDetail = () => {
   const { id } = useParams();
+  const { isLoggedIn, isLoading: authLoading } = useLineContext();
   const plant = plants.find((p) => p.id === id);
+
+  // Force login
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      if (validateLineConfig()) {
+        liff.login({ redirectUri: window.location.href });
+      }
+    }
+  }, [isLoggedIn, authLoading]);
+
+  // Show loading while authenticating
+  if (authLoading || !isLoggedIn) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <p className="text-muted-foreground">กำลังเข้าสู่ระบบ...</p>
+      </div>
+    );
+  }
 
   if (!plant) {
     return (

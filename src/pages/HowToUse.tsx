@@ -1,4 +1,8 @@
-import { Search, MousePointerClick, BookOpen, Heart } from "lucide-react";
+import { useEffect } from "react";
+import { Search, MousePointerClick, BookOpen, Heart, Loader } from "lucide-react";
+import { useLineContext } from "@/contexts/LineContext";
+import { lineConfig, validateLineConfig } from "@/config/line-config";
+import liff from "@line/liff";
 
 const steps = [
   {
@@ -23,7 +27,29 @@ const steps = [
   },
 ];
 
-const HowToUse = () => (
+const HowToUse = () => {
+  const { isLoggedIn, isLoading: authLoading } = useLineContext();
+
+  // Force login
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      if (validateLineConfig()) {
+        liff.login({ redirectUri: window.location.href });
+      }
+    }
+  }, [isLoggedIn, authLoading]);
+
+  // Show loading while authenticating
+  if (authLoading || !isLoggedIn) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <p className="text-muted-foreground">กำลังเข้าสู่ระบบ...</p>
+      </div>
+    );
+  }
+
+  return (
   <div className="container max-w-full md:max-w-3xl px-3 sm:px-4 py-8 sm:py-12">
     <h1 className="text-2xl sm:text-3xl font-bold text-foreground text-center mb-2 sm:mb-3 animate-fade-in">วิธีใช้งาน</h1>
     <p className="text-center text-xs sm:text-base text-muted-foreground mb-8 sm:mb-12 animate-fade-in" style={{ animationDelay: "0.1s" }}>
@@ -50,6 +76,7 @@ const HowToUse = () => (
       ))}
     </div>
   </div>
-);
+  );
+};
 
 export default HowToUse;
