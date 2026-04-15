@@ -35,14 +35,20 @@ export function useFirebaseLineProfile(lineProfile: LineProfile | null) {
         setIsLoading(true);
         setError(null);
 
-        // Prepare profile data
+        // Prepare profile data - filter out undefined values
         const profileData: FirebaseLineProfile = {
           userId: lineProfile.userId,
           displayName: lineProfile.displayName,
-          pictureUrl: lineProfile.pictureUrl,
-          statusMessage: lineProfile.statusMessage,
           updatedAt: new Date(),
         };
+
+        // Only add optional fields if they have values
+        if (lineProfile.pictureUrl) {
+          profileData.pictureUrl = lineProfile.pictureUrl;
+        }
+        if (lineProfile.statusMessage) {
+          profileData.statusMessage = lineProfile.statusMessage;
+        }
 
         // Check if profile exists in Firebase
         const existingProfile = await getUserProfile(lineProfile.userId);
