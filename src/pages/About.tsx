@@ -30,16 +30,16 @@ const About = () => {
     <div className="text-center mb-8 sm:mb-12">
       <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 sm:mb-3">เกี่ยวกับเรา</h1>
       <p className="text-xs sm:text-base text-muted-foreground max-w-lg mx-auto px-2 sm:px-0">
-        เราคือทีมผู้พัฒนาที่หลงใหลในธรรมชาติ และต้องการเผยแพร่ความรู้เรื่องพรรณไม้ให้ทุกคนเข้าถึงได้ง่าย
+        เว็บไซต์นี้พัฒนาโดยนิสิตสาขาวิทยาการคอมพิวเตอร์ ที่ต้องการนำเทคโนโลยีมาช่วยให้การค้นหาและเรียนรู้เกี่ยวกับพันธุ์พืชเป็นเรื่องง่ายขึ้น ผู้ใช้งานสามารถค้นหาข้อมูลหรืออัปโหลดรูปภาพเพื่อจำแนกพืชได้อย่างสะดวก พร้อมข้อมูลสำคัญที่เข้าใจง่ายในที่เดียว
       </p>
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-12">
       {[
         { icon: Target, title: "เป้าหมาย", desc: "สร้างแหล่งข้อมูลพรรณไม้ที่ครบถ้วน เข้าถึงง่าย และใช้งานสะดวกสำหรับทุกคน" },
-        { icon: Leaf, title: "วิสัยทัศน์", desc: "ส่งเสริมให้ผู้คนรักและเข้าใจธรรมชาติมากขึ้น ผ่านเทคโนโลยีที่ทันสมัย" },
-        { icon: Heart, title: "แรงบันดาลใจ", desc: "ความรักในธรรมชาติและความต้องการแบ่งปันความรู้เรื่องพรรณไม้แก่สังคม" },
-        { icon: Users, title: "ทีมพัฒนา", desc: "ทีมนักพัฒนาและผู้เชี่ยวชาญด้านพฤกษศาสตร์ ที่ร่วมกันสร้างสรรค์แพลตฟอร์มนี้" },
+        { icon: Leaf, title: "วิสัยทัศน์", desc: "ส่งเสริมให้ผู้คนเข้าใจและใกล้ชิดธรรมชาติมากขึ้น ผ่านการใช้เทคโนโลยีอย่างสร้างสรรค์" },
+        { icon: Heart, title: "แรงบันดาลใจ", desc: "เกิดจากความสนใจในธรรมชาติ และความตั้งใจในการแบ่งปันความรู้ด้านพรรณไม้ให้กับทุกคน" },
+        { icon: Users, title: "ทีมพัฒนา", desc: "พัฒนาโดยนิสิตด้านเทคโนโลยี ร่วมกับการศึกษาข้อมูลด้านพฤกษศาสตร์ เพื่อสร้างแพลตฟอร์มที่ใช้งานได้จริง" },
       ].map((item, i) => (
         <div
           key={i}
@@ -53,13 +53,6 @@ const About = () => {
           <p className="text-xs sm:text-sm text-muted-foreground">{item.desc}</p>
         </div>
       ))}
-    </div>
-
-    <div className="text-center p-6 sm:p-8 rounded-lg sm:rounded-xl bg-secondary/60">
-      <h2 className="text-base sm:text-lg font-semibold text-foreground mb-2">ติดต่อเรา</h2>
-      <p className="text-xs sm:text-sm text-muted-foreground">
-        หากมีคำถามหรือข้อเสนอแนะ สามารถติดต่อได้ที่ info@planthai.com
-      </p>
     </div>
   </div>
   );
