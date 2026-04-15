@@ -1,9 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, LogOut, Image as ImageIcon, Loader } from "lucide-react";
+import { User, Mail, LogOut, Image as ImageIcon, Loader, Leaf, Clock } from "lucide-react";
 import { useLineContext } from "@/contexts/LineContext";
 import { useImageHistory } from "@/hooks/use-image-history";
-import ImageUpload from "@/components/ImageUpload";
 import ImageHistoryGallery from "@/components/ImageHistoryGallery";
 import { toast } from "sonner";
 
@@ -31,10 +30,6 @@ const Profile = () => {
     navigate("/");
   };
 
-  const handleImageUpload = async (file: File) => {
-    return await uploadImageToHistory(file);
-  };
-
   // Loading state
   if (authLoading) {
     return (
@@ -54,75 +49,113 @@ const Profile = () => {
 
   return (
     <div className="container max-w-full md:max-w-4xl px-3 sm:px-4 py-8 sm:py-12 animate-fade-in">
-      {/* Profile Header */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-8 sm:mb-10 pb-6 sm:pb-8 border-b">
-        {/* Avatar */}
-        <div className="flex-shrink-0">
-          {profile.pictureUrl ? (
-            <img
-              src={profile.pictureUrl}
-              alt={profile.displayName}
-              className="w-20 sm:w-24 h-20 sm:h-24 rounded-full object-cover border-4 border-primary"
-            />
-          ) : (
-            <div className="w-20 sm:w-24 h-20 sm:h-24 rounded-full bg-accent flex items-center justify-center flex-shrink-0 border-4 border-primary">
-              <User className="h-10 sm:h-12 w-10 sm:w-12 text-primary" />
+      {/* Profile Header with Background */}
+      <div className="mb-8 sm:mb-10">
+        <div className="relative rounded-xl lg:rounded-2xl overflow-hidden bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 p-6 sm:p-8 lg:p-10">
+          {/* Decorative Element */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -ml-12 -mb-12" />
+          
+          <div className="relative flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+            {/* Avatar with Enhanced Styling */}
+            <div className="flex-shrink-0 relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-primary/60 opacity-0 hover:opacity-100 transition-opacity duration-300 blur" />
+              {profile.pictureUrl ? (
+                <img
+                  src={profile.pictureUrl}
+                  alt={profile.displayName}
+                  className="relative w-24 sm:w-28 h-24 sm:h-28 rounded-full object-cover border-4 border-primary shadow-lg hover:shadow-xl transition-shadow duration-300"
+                />
+              ) : (
+                <div className="relative w-24 sm:w-28 h-24 sm:h-28 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center border-4 border-primary shadow-lg">
+                  <User className="h-12 sm:h-14 w-12 sm:w-14 text-white" />
+                </div>
+              )}
+              {/* Online Status Badge */}
+              <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 rounded-full border-3 border-white dark:border-slate-950 shadow-md" />
             </div>
-          )}
-        </div>
 
-        {/* Profile Info */}
-        <div className="text-center sm:text-left flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-            {profile.displayName}
-          </h1>
-          {profile.statusMessage && (
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              {profile.statusMessage}
-            </p>
-          )}
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 mt-3 sm:mt-4">
-            <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
-              <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              ID: {profile.userId}
-            </p>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1 text-xs sm:text-sm text-red-600 border border-red-600 px-3 sm:px-4 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
-            >
-              <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              ออกจากระบบ
-            </button>
+            {/* Profile Info */}
+            <div className="text-center sm:text-left flex-1">
+              <div className="mb-1">
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                  {profile.displayName}
+                </h1>
+              </div>
+              {profile.statusMessage && (
+                <p className="text-sm sm:text-base text-muted-foreground mb-4 italic">
+                  "{profile.statusMessage}"
+                </p>
+              )}
+              <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/30 px-3 py-1.5 rounded-full">
+                  <Mail className="h-4 w-4" />
+                  <span className="font-medium">{profile.userId}</span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-red-600 border border-red-600 px-4 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-300 hover:shadow-md"
+                >
+                  <LogOut className="h-4 w-4" />
+                  ออกจากระบบ
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Image Upload Section */}
-      <div className="mb-8 sm:mb-10 p-4 sm:p-6 rounded-lg border bg-card">
-        <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2 mb-4 sm:mb-6">
-          <ImageIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-          อัปโหลดรูปพืช
-        </h2>
-        <p className="text-xs sm:text-sm text-muted-foreground mb-4">
-          อัปโหลดรูปพืชที่คุณต้องการตรวจสอบ รูปภาพนี้จะถูกบันทึกในประวัติของคุณ
-        </p>
-        <ImageUpload
-          onImageSelected={handleImageUpload}
-          isLoading={historyLoading}
-        />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 sm:mb-10">
+        <div className="rounded-xl border bg-card hover:shadow-md transition-shadow duration-300 p-5 sm:p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 sm:p-4 rounded-lg bg-primary/10">
+              <ImageIcon className="h-5 sm:h-6 w-5 sm:w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wide font-medium">ประวัติรูปภาพ</p>
+              <p className="text-xl sm:text-2xl font-bold text-foreground">
+                {images.length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-card hover:shadow-md transition-shadow duration-300 p-5 sm:p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 sm:p-4 rounded-lg bg-primary/10">
+              <Leaf className="h-5 sm:h-6 w-5 sm:w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wide font-medium">พืชที่ค้นหา</p>
+              <p className="text-xl sm:text-2xl font-bold text-foreground">
+                {images.length}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Image History Section */}
-      <div className="p-4 sm:p-6 rounded-lg border bg-card">
-        <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2 mb-4 sm:mb-6">
-          <ImageIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-          ประวัติรูปภาพ ({images.length})
-        </h2>
-        <ImageHistoryGallery
-          images={images}
-          onDelete={deleteImageFromHistory}
-          isLoading={historyLoading}
-        />
+      <div className="rounded-xl border bg-card overflow-hidden hover:shadow-md transition-shadow duration-300">
+        <div className="p-6 sm:p-8 border-b bg-gradient-to-r from-primary/5 to-transparent">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Clock className="h-5 w-5 text-primary" />
+            </div>
+            ประวัติการค้นหาพืช
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+            รูปภาพที่คุณได้ค้นหาและตรวจสอบมา
+          </p>
+        </div>
+        <div className="p-6 sm:p-8">
+          <ImageHistoryGallery
+            images={images}
+            onDelete={deleteImageFromHistory}
+            isLoading={historyLoading}
+          />
+        </div>
       </div>
     </div>
   );
