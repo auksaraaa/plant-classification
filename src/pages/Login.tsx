@@ -1,13 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Mail, Lock, MessageCircle, Loader } from "lucide-react";
 import { toast } from "sonner";
 import { useLineAuth } from "@/hooks/use-line-auth";
 import { lineConfig, validateLineConfig } from "@/config/line-config";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { isLoading, isLoggedIn, profile, login: lineLogin } = useLineAuth(lineConfig.liffId);
+
+  // Redirect to profile if already logged in
+  useEffect(() => {
+    if (isLoggedIn && profile) {
+      navigate("/profile");
+    }
+  }, [isLoggedIn, profile, navigate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
