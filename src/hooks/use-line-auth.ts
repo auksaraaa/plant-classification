@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import liff from '@line/liff';
 
 interface LineProfile {
@@ -17,28 +17,48 @@ interface UseLineAuthReturn {
   logout: () => void;
 }
 
+// Direct environment variable reading for debugging
+const getLiffIdFromEnv = (): string => {
+  const liffId = import.meta.env.VITE_LINE_LIFF_ID;
+  console.log('getLiffIdFromEnv:', { 
+    liffId, 
+    isDefined: liffId !== undefined, 
+    isEmpty: liffId === '' 
+  });
+  return liffId || '';
+};
+
 export const useLineAuth = (liffId: string): UseLineAuthReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profile, setProfile] = useState<LineProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [liffReady, setLiffReady] = useState(false);
+  const initPromiseRef = useRef<Promise<void> | null>(null);
 
   // Initialize LIFF
   useEffect(() => {
     const initializeLiff = async () => {
       try {
+        // Use liffId from props, fallback to reading from env
+        const finalLiffId = liffId && liffId.trim() ? liffId : getLiffIdFromEnv();
+        
+        console.log('Attempting LIFF initialization with ID:', { 
+          finalLiffId, 
+          length: finalLiffId?.length,
+          isEmpty: finalLiffId === '' 
+        });
+
         // Ensure liffId is not empty
-        if (!liffId || liffId.trim() === '') {
-          const errorMsg = `Invalid liffId: "${liffId}". Please check VITE_LINE_LIFF_ID in .env.local`;
-          console.error(errorMsg);
+        if (!finalLiffId || finalLiffId.trim() === '') {
+          const errorMsg = 'VITE_LINE_LIFF_ID is not configured. Please check your .env.local file.';
+          console.error(errorMsg, { env: import.meta.env.VITE_LINE_LIFF_ID });
           setError(errorMsg);
           return;
         }
 
-        console.log('Initializing LIFF with ID:', liffId);
-        await liff.init({ liffId });
-        setLiffReady(true);
+        console.log('Initializing LIFF with ID:', finalLiffId);
+        await liff.init({ liffId: finalLiffId });
+        console.log('LIFF initialized successfully');
 
         if (liff.isLoggedIn()) {
           setIsLoggedIn(true);
@@ -49,34 +69,42 @@ export const useLineAuth = (liffId: string): UseLineAuthReturn => {
             pictureUrl: profile.pictureUrl,
             statusMessage: profile.statusMessage,
           });
+          console.log('User is logged in:', profile.displayName);
         } else {
           setIsLoggedIn(false);
+          console.log('User is not logged in');
         }
         setError(null);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize LIFF';
         setError(errorMessage);
         console.error('LIFF initialization error:', err);
-        setLiffReady(false);
       }
     };
 
-    if (liffId && liffId.trim() !== '') {
-      initializeLiff();
-    } else {
-      console.warn('liffId is empty or not provided');
-      setError('liffId is not configured');
+    // Cache the initialization promise
+    if (!initPromiseRef.current) {
+      initPromiseRef.current = initializeLiff();
     }
   }, [liffId]);
 
   const login = useCallback(async () => {
     try {
       setIsLoading(true);
-      if (!liffReady) {
-        throw new Error('LIFF is not initialized yet. Please check your LIFF ID configuration.');
+      
+      // Ensure LIFF is initialized
+      if (!liff.isLoggedIn && !liff.isInClient()) {
+        // Wait for initialization to complete
+        if (initPromiseRef.current) {
+          await initPromiseRef.current;
+        }
       }
-      if (!liff.isLoggedIn()) {
+
+      if (!error && liff.isInClient && !liff.isLoggedIn()) {
+        console.log('Initiating LINE login...');
         liff.login({ redirectUri: window.location.href });
+      } else if (error) {
+        throw new Error(error);
       }
       // Loading state will be cleared when page redirects
     } catch (err) {
@@ -85,11 +113,13 @@ export const useLineAuth = (liffId: string): UseLineAuthReturn => {
       console.error('Login error:', err);
       setIsLoading(false);
     }
-  }, [liffReady]);
+  }, [error]);
 
   const logout = useCallback(() => {
     try {
-      liff.logout();
+      if (liff.isInClient && liff.isLoggedIn()) {
+        liff.logout();
+      }
       setIsLoggedIn(false);
       setProfile(null);
     } catch (err) {
