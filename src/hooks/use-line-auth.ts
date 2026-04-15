@@ -18,7 +18,7 @@ interface UseLineAuthReturn {
 }
 
 export const useLineAuth = (liffId: string): UseLineAuthReturn => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profile, setProfile] = useState<LineProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,6 @@ export const useLineAuth = (liffId: string): UseLineAuthReturn => {
   useEffect(() => {
     const initializeLiff = async () => {
       try {
-        setIsLoading(true);
         await liff.init({ liffId });
 
         if (liff.isLoggedIn()) {
@@ -47,8 +46,6 @@ export const useLineAuth = (liffId: string): UseLineAuthReturn => {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize LIFF';
         setError(errorMessage);
         console.error('LIFF initialization error:', err);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -63,11 +60,11 @@ export const useLineAuth = (liffId: string): UseLineAuthReturn => {
       if (!liff.isLoggedIn()) {
         liff.login({ redirectUri: window.location.href });
       }
+      // Loading state will be cleared when page redirects
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
       setError(errorMessage);
       console.error('Login error:', err);
-    } finally {
       setIsLoading(false);
     }
   }, []);
