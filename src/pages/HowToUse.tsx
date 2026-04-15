@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { Search, MousePointerClick, BookOpen, Heart, Loader } from "lucide-react";
 import { useLineContext } from "@/contexts/LineContext";
-import { lineConfig, validateLineConfig } from "@/config/line-config";
-import liff from "@line/liff";
+import { validateLineConfig } from "@/config/line-config";
 
 const steps = [
   {
@@ -28,16 +27,16 @@ const steps = [
 ];
 
 const HowToUse = () => {
-  const { isLoggedIn, isLoading: authLoading } = useLineContext();
+  const { isLoggedIn, isLoading: authLoading, login } = useLineContext();
 
   // Force login
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
       if (validateLineConfig()) {
-        liff.login({ redirectUri: window.location.href });
+        login();
       }
     }
-  }, [isLoggedIn, authLoading]);
+  }, [isLoggedIn, authLoading, login]);
 
   // Show loading while authenticating
   if (authLoading || !isLoggedIn) {

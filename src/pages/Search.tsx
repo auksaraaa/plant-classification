@@ -5,13 +5,12 @@ import { plants, categories } from "@/data/plants";
 import PlantCard from "@/components/PlantCard";
 import { Button } from "@/components/ui/button";
 import { useLineContext } from "@/contexts/LineContext";
-import { lineConfig, validateLineConfig } from "@/config/line-config";
-import liff from "@line/liff";
+import { validateLineConfig } from "@/config/line-config";
 
 const Search = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isLoggedIn, isLoading: authLoading } = useLineContext();
+  const { isLoggedIn, isLoading: authLoading, login } = useLineContext();
   const initialSearch = searchParams.get("q") || "";
   
   const [search, setSearch] = useState(initialSearch);
@@ -21,10 +20,10 @@ const Search = () => {
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
       if (validateLineConfig()) {
-        liff.login({ redirectUri: window.location.href });
+        login();
       }
     }
-  }, [isLoggedIn, authLoading]);
+  }, [isLoggedIn, authLoading, login]);
 
   const filtered = useMemo(() => {
     return plants.filter((p) => {

@@ -6,12 +6,11 @@ import PlantCard from "@/components/PlantCard";
 import { Button } from "@/components/ui/button";
 import heroImg from "@/assets/hero-plants.jpg";
 import { useLineContext } from "@/contexts/LineContext";
-import { lineConfig, validateLineConfig } from "@/config/line-config";
-import liff from "@line/liff";
+import { validateLineConfig } from "@/config/line-config";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, isLoading: authLoading } = useLineContext();
+  const { isLoggedIn, isLoading: authLoading, login } = useLineContext();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("ทั้งหมด");
 
@@ -19,10 +18,10 @@ const Index = () => {
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
       if (validateLineConfig()) {
-        liff.login({ redirectUri: window.location.href });
+        login();
       }
     }
-  }, [isLoggedIn, authLoading]);
+  }, [isLoggedIn, authLoading, login]);
 
   const filtered = useMemo(() => {
     return plants.filter((p) => {
