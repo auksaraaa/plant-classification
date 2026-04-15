@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
 
-const Footer = () => (
-  <footer className="border-t bg-secondary/50 mt-16">
+const Footer = ({ className = "" }: { className?: string }) => (
+  <footer className={`border-t bg-secondary/50 mt-16 ${className}`}>
     <div className="container py-10">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div>

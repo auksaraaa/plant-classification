@@ -4,8 +4,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Navbar from "./components/Navbar";
+import BottomNav from "./components/BottomNav";
 import Footer from "./components/Footer";
 import Index from "./pages/Index";
+import Search from "./pages/Search";
 import PlantDetail from "./pages/PlantDetail";
 import HowToUse from "./pages/HowToUse";
 import Login from "./pages/Login";
@@ -23,9 +25,10 @@ const App = () => (
       <BrowserRouter>
         <div className="flex flex-col min-h-screen">
           <Navbar />
-          <main className="flex-1">
+          <main className="flex-1 pb-16 md:pb-0">
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/search" element={<Search />} />
               <Route path="/plant/:id" element={<PlantDetail />} />
               <Route path="/how-to-use" element={<HowToUse />} />
               <Route path="/login" element={<Login />} />
@@ -34,7 +37,8 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
-          <Footer />
+          <Footer className="hidden md:block" />
+          <BottomNav />
         </div>
       </BrowserRouter>
     </TooltipProvider>
