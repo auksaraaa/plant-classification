@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
-import { plants, categories } from "@/data/plants";
+import { categories } from "@/data/plants";
+import { usePlants } from "@/hooks/use-plants";
 import PlantCard from "@/components/PlantCard";
 import { Button } from "@/components/ui/button";
 import heroImg from "@/assets/hero-plants.jpg";
@@ -11,6 +12,7 @@ import { validateLineConfig } from "@/config/line-config";
 const Index = () => {
   const navigate = useNavigate();
   const { isLoggedIn, isLoading: authLoading, login } = useLineContext();
+  const { plants, loading: plantsLoading, error: plantsError } = usePlants();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("ทั้งหมด");
 
@@ -40,6 +42,19 @@ const Index = () => {
       <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         <p className="text-muted-foreground">กำลังเข้าสู่ระบบ...</p>
+      </div>
+    );
+  }
+
+  // Show error if plants failed to load
+  if (plantsError) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
+        <p className="text-destructive">เกิดข้อผิดพลาดในการโหลดข้อมูลพรรณไม้</p>
+        <p className="text-muted-foreground text-sm">{plantsError}</p>
+        <Button onClick={() => window.location.reload()} variant="outline">
+          ลองใหม่
+        </Button>
       </div>
     );
   }
@@ -103,7 +118,12 @@ const Index = () => {
         <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-4 sm:mb-6">
           {category === "ทั้งหมด" ? "พรรณไม้แนะนำ" : category} ({filtered.length})
         </h2>
-        {filtered.length > 0 ? (
+        {plantsLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+            <p className="text-muted-foreground ml-3">กำลังโหลดข้อมูลพรรณไม้...</p>
+          </div>
+        ) : filtered.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {filtered.map((plant, i) => (
               <div key={plant.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 0.05}s`, opacity: 0 }}>
