@@ -63,6 +63,9 @@ export function usePlant(plantId?: string) {
   useEffect(() => {
     if (plantId) {
       loadPlant(plantId);
+    } else {
+      setPlant(null);
+      setLoading(false);
     }
   }, [plantId]);
 
@@ -72,21 +75,26 @@ export function usePlant(plantId?: string) {
       setError(null);
       let foundPlant: Plant | null = null;
       
+      console.log('Looking for plant with ID:', id);
+      
       // Try to get from Firebase first
       try {
-        const firebasePlant = await getPlant(id);
+        const firebasePlant: any = await getPlant(id);
+        console.log('Firebase result:', firebasePlant);
+        
         if (firebasePlant && typeof firebasePlant === 'object') {
           // Ensure characteristics is a proper object
-          if (!('characteristics' in firebasePlant)) {
+          if (!firebasePlant.characteristics || typeof firebasePlant.characteristics !== 'object') {
             firebasePlant.characteristics = {
-              leaf: '',
-              flower: '',
-              fruit: '',
-              height: '',
-              care: ''
+              leaf: firebasePlant.leaf || '',
+              flower: firebasePlant.flower || '',
+              fruit: firebasePlant.fruit || '',
+              height: firebasePlant.height || '',
+              care: firebasePlant.care || ''
             };
           }
           foundPlant = firebasePlant as Plant;
+          console.log('Using Firebase plant:', foundPlant);
         }
       } catch (fbErr) {
         console.warn('Failed to load from Firebase:', fbErr);
@@ -95,11 +103,14 @@ export function usePlant(plantId?: string) {
       // Fallback to local data if not found in Firebase
       if (!foundPlant) {
         const localPlant = localPlants.find((p) => p.id === id);
+        console.log('Local search result:', localPlant);
         if (localPlant) {
           foundPlant = localPlant;
+          console.log('Using local plant:', foundPlant);
         }
       }
 
+      console.log('Final plant result:', foundPlant);
       setPlant(foundPlant || null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load plant';

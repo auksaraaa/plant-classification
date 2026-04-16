@@ -29,16 +29,21 @@ export const setDocument = async (
 };
 
 // Generic function to get a single document
-export const getDocument = async (collectionName: string, docId: string) => {
+export const getDocument = async (collectionName: string, docId: string): Promise<any> => {
   try {
+    console.log(`[Firestore] Getting document: ${collectionName}/${docId}`);
     const docSnap = await getDoc(doc(db, collectionName, docId));
+    console.log(`[Firestore] Document exists:`, docSnap.exists());
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
+      const data: any = { id: docSnap.id, ...docSnap.data() };
+      console.log(`[Firestore] Document data:`, data);
+      return data;
     } else {
+      console.warn(`[Firestore] Document not found: ${collectionName}/${docId}`);
       return null;
     }
   } catch (error) {
-    console.error('Error getting document:', error);
+    console.error(`[Firestore] Error getting document ${collectionName}/${docId}:`, error);
     throw error;
   }
 };
@@ -46,10 +51,13 @@ export const getDocument = async (collectionName: string, docId: string) => {
 // Generic function to get all documents from a collection
 export const getDocuments = async (collectionName: string) => {
   try {
+    console.log(`[Firestore] Getting all documents from: ${collectionName}`);
     const querySnapshot = await getDocs(collection(db, collectionName));
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    console.log(`[Firestore] Found ${docs.length} documents in ${collectionName}:`, docs.map((d: any) => d.id));
+    return docs;
   } catch (error) {
-    console.error('Error getting documents:', error);
+    console.error(`[Firestore] Error getting documents from ${collectionName}:`, error);
     throw error;
   }
 };
@@ -105,12 +113,46 @@ export const addPlant = async (plantData: any) => {
   });
 };
 
-export const getPlant = async (plantId: string) => {
-  return getDocument('plants', plantId);
+export const getPlant = async (plantId: string): Promise<any> => {
+  console.log(`[Plant] Getting plant: ${plantId}`);
+  const plant: any = await getDocument('plants', plantId);
+  
+  if (!plant) {
+    console.warn(`[Plant] Plant not found in Firebase: ${plantId}`);
+    return null;
+  }
+  
+  if (plant && typeof plant === 'object') {
+    // Normalize characteristics from flat structure to nested
+    if (!plant.characteristics) {
+      plant.characteristics = {
+        leaf: plant.leaf || '',
+        flower: plant.flower || '',
+        fruit: plant.fruit || '',
+        height: plant.height || '',
+        care: plant.care || ''
+      };
+    }
+  }
+  console.log(`[Plant] Successfully loaded plant:`, plant);
+  return plant;
 };
 
 export const getAllPlants = async () => {
-  return getDocuments('plants');
+  const plants = await getDocuments('plants');
+  return plants.map((plant: any) => {
+    // Normalize characteristics from flat structure to nested
+    if (!plant.characteristics) {
+      plant.characteristics = {
+        leaf: plant.leaf || '',
+        flower: plant.flower || '',
+        fruit: plant.fruit || '',
+        height: plant.height || '',
+        care: plant.care || ''
+      };
+    }
+    return plant;
+  });
 };
 
 export const updatePlant = async (plantId: string, plantData: any) => {
