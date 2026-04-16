@@ -1,29 +1,29 @@
 import { useEffect } from "react";
-import { Search, MousePointerClick, BookOpen, Heart, Loader } from "lucide-react";
+import { Search, Camera, BarChart3, BookOpen, Loader } from "lucide-react";
 import { useLineContext } from "@/contexts/LineContext";
 import { validateLineConfig } from "@/config/line-config";
 
 const steps = [
   {
     icon: Search,
-    title: "ค้นหาพรรณไม้",
-    desc: "พิมพ์ชื่อพรรณไม้ที่ต้องการค้นหาในช่องค้นหา หรือเลือกหมวดหมู่ที่สนใจ",
+    step: "ค้นหาพรรณไม้",
+    desc: "พิมพ์ชื่อพรรณไม้เพื่อค้นหาข้อมูลได้ทันที"
   },
   {
-    icon: MousePointerClick,
-    title: "เลือกดูรายละเอียด",
-    desc: "คลิกที่การ์ดพรรณไม้เพื่อดูข้อมูลเชิงลึก ทั้งชื่อวิทยาศาสตร์ ลักษณะ และวิธีดูแล",
+    icon: Camera,
+    step: "อัปโหลดรูปภาพ",
+    desc: "ถ่ายหรืออัปโหลดภาพพืช เพื่อให้ระบบช่วยจำแนก"
+  },
+  {
+    icon: BarChart3,
+    step: "ดูผลลัพธ์",
+    desc: "แสดงชื่อพืช พร้อมค่าความแม่นยำและตัวเลือกใกล้เคียง"
   },
   {
     icon: BookOpen,
-    title: "เรียนรู้การดูแล",
-    desc: "อ่านข้อมูลการดูแลรักษาพรรณไม้แต่ละชนิด เพื่อให้ต้นไม้ของคุณเติบโตสมบูรณ์",
-  },
-  {
-    icon: Heart,
-    title: "บันทึกรายการโปรด",
-    desc: "เข้าสู่ระบบเพื่อบันทึกพรรณไม้ที่ชื่นชอบ และดูประวัติการเข้าชมย้อนหลัง",
-  },
+    step: "ศึกษาข้อมูลเพิ่มเติม",
+    desc: "ดูรายละเอียด เช่น ลักษณะ การดูแล และประโยชน์"
+  }
 ];
 
 const HowToUse = () => {
@@ -67,7 +67,7 @@ const HowToUse = () => {
           </div>
           <div>
             <h3 className="font-semibold text-foreground mb-1 text-sm sm:text-base">
-              ขั้นตอนที่ {i + 1}: {step.title}
+              ขั้นตอนที่ {i + 1}: {step.step}
             </h3>
             <p className="text-xs sm:text-sm text-muted-foreground">{step.desc}</p>
           </div>
