@@ -155,4 +155,4 @@ export const plants: Plant[] = [
   },
 ];
 
-export const categories = ["ทั้งหมด", "ไม้ใบ", "ไม้ดอก", "ไม้เลื้อย", "สมุนไพร"];
+export const categories = ["ทั้งหมด", "ไม้ใบ", "ไม้ดอก", "ไม้เลื้อย", "ไม้ยืนต้น", "สมุนไพร"];
