@@ -12,6 +12,7 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import type { Plant } from '@/data/plants';
 
 // Generic function to add/update a document
 export const setDocument = async (
@@ -122,37 +123,13 @@ export const getPlant = async (plantId: string): Promise<any> => {
     return null;
   }
   
-  if (plant && typeof plant === 'object') {
-    // Normalize characteristics from flat structure to nested
-    if (!plant.characteristics) {
-      plant.characteristics = {
-        leaf: plant.leaf || '',
-        flower: plant.flower || '',
-        fruit: plant.fruit || '',
-        height: plant.height || '',
-        care: plant.care || ''
-      };
-    }
-  }
   console.log(`[Plant] Successfully loaded plant:`, plant);
   return plant;
 };
 
 export const getAllPlants = async () => {
   const plants = await getDocuments('plants');
-  return plants.map((plant: any) => {
-    // Normalize characteristics from flat structure to nested
-    if (!plant.characteristics) {
-      plant.characteristics = {
-        leaf: plant.leaf || '',
-        flower: plant.flower || '',
-        fruit: plant.fruit || '',
-        height: plant.height || '',
-        care: plant.care || ''
-      };
-    }
-    return plant;
-  });
+  return plants as Plant[];
 };
 
 export const updatePlant = async (plantId: string, plantData: any) => {

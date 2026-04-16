@@ -83,16 +83,7 @@ export function usePlant(plantId?: string) {
         console.log('Firebase result:', firebasePlant);
         
         if (firebasePlant && typeof firebasePlant === 'object') {
-          // Ensure characteristics is a proper object
-          if (!firebasePlant.characteristics || typeof firebasePlant.characteristics !== 'object') {
-            firebasePlant.characteristics = {
-              leaf: firebasePlant.leaf || '',
-              flower: firebasePlant.flower || '',
-              fruit: firebasePlant.fruit || '',
-              height: firebasePlant.height || '',
-              care: firebasePlant.care || ''
-            };
-          }
+          // Firebase characteristics is already a nested object
           foundPlant = firebasePlant as Plant;
           console.log('Using Firebase plant:', foundPlant);
         }
