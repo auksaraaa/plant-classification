@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
-import { getAllPlants, getPlant } from '@/lib/firestore';
 import { plants as localPlants } from '@/data/plants';
 import type { Plant } from '@/data/plants';
 
 /**
- * Hook for fetching all plants from Firebase and local data combined
+ * Hook for fetching all plants from local data
  */
 export function usePlants() {
   const [plants, setPlants] = useState<Plant[]>(localPlants);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -19,27 +18,11 @@ export function usePlants() {
     try {
       setLoading(true);
       setError(null);
-      
-      try {
-        const firebasePlants = await getAllPlants();
-        
-        // Merge Firebase and local plants, with Firebase taking priority
-        if (firebasePlants && Array.isArray(firebasePlants) && firebasePlants.length > 0) {
-          const fbIds = new Set(firebasePlants.map((p: any) => p.id));
-          const localOnly = localPlants.filter((p) => !fbIds.has(p.id));
-          const combined = [...firebasePlants, ...localOnly];
-          setPlants(combined as Plant[]);
-        } else {
-          setPlants(localPlants);
-        }
-      } catch (fbErr) {
-        console.warn('Failed to load from Firebase, using local data:', fbErr);
-        setPlants(localPlants);
-      }
+      // Using local plants data only
+      setPlants(localPlants);
     } catch (err) {
       console.error('Error loading plants:', err);
-      setPlants(localPlants);
-      setError(null);
+      setError('Failed to load plants');
     } finally {
       setLoading(false);
     }
@@ -53,11 +36,11 @@ export function usePlants() {
 }
 
 /**
- * Hook for fetching a single plant by ID from Firebase or local data
+ * Hook for fetching a single plant by ID from local data
  */
 export function usePlant(plantId?: string) {
   const [plant, setPlant] = useState<Plant | null>(null);
-  const [loading, setLoading] = useState(!!plantId);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -77,32 +60,21 @@ export function usePlant(plantId?: string) {
       
       console.log('Looking for plant with ID:', id);
       
-      // Try to get from Firebase first
-      try {
-        const firebasePlant: any = await getPlant(id);
-        console.log('Firebase result:', firebasePlant);
-        
-        if (firebasePlant && typeof firebasePlant === 'object') {
-          // Firebase characteristics is already a nested object
-          foundPlant = firebasePlant as Plant;
-          console.log('Using Firebase plant:', foundPlant);
-        }
-      } catch (fbErr) {
-        console.warn('Failed to load from Firebase:', fbErr);
+      // Get from local data
+      const localPlant = localPlants.find((p) => p.id === id);
+      console.log('Local search result:', localPlant);
+      if (localPlant) {
+        foundPlant = localPlant;
+        console.log('Using local plant:', foundPlant);
       }
 
-      // Fallback to local data if not found in Firebase
-      if (!foundPlant) {
-        const localPlant = localPlants.find((p) => p.id === id);
-        console.log('Local search result:', localPlant);
-        if (localPlant) {
-          foundPlant = localPlant;
-          console.log('Using local plant:', foundPlant);
-        }
+      if (foundPlant) {
+        setPlant(foundPlant);
+      } else {
+        console.warn('Plant not found:', id);
+        setError('Plant not found');
+        setPlant(null);
       }
-
-      console.log('Final plant result:', foundPlant);
-      setPlant(foundPlant || null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load plant';
       setError(errorMessage);
