@@ -1,30 +1,6 @@
-import { useEffect } from "react";
 import { Leaf, Target, Users, Heart, Loader } from "lucide-react";
-import { useLineContext } from "@/contexts/LineContext";
-import { validateLineConfig } from "@/config/line-config";
 
 const About = () => {
-  const { isLoggedIn, isLoading: authLoading, login } = useLineContext();
-
-  // Force login
-  useEffect(() => {
-    if (!authLoading && !isLoggedIn) {
-      if (validateLineConfig()) {
-        login();
-      }
-    }
-  }, [isLoggedIn, authLoading, login]);
-
-  // Show loading while authenticating
-  if (authLoading || !isLoggedIn) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        <p className="text-muted-foreground">กำลังเข้าสู่ระบบ...</p>
-      </div>
-    );
-  }
-
   return (
   <div className="container max-w-full md:max-w-3xl px-3 sm:px-4 py-8 sm:py-12 animate-fade-in">
     <div className="text-center mb-8 sm:mb-12">

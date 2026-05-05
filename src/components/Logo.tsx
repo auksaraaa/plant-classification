@@ -17,14 +17,14 @@ const Logo = ({ size = "md", showText = true }: LogoProps) => {
   return (
     <div className="flex items-center gap-2">
       <div className="relative flex items-center">
-        <Sprout className={`${icon} text-primary`} />
-        <Leaf className={`${icon} text-green-600 absolute -right-1 -top-1`} style={{ width: "60%", height: "60%" }} />
+        <Sprout className={`${icon} text-white`} />
+        <Leaf className={`${icon} text-white absolute -right-1 -top-1`} style={{ width: "60%", height: "60%" }} />
       </div>
 
       {showText && (
         <div className="flex flex-col">
-          <span className={`${text} font-bold text-primary`}>พรรณไม้</span>
-          <span className="text-xs text-muted-foreground -mt-1">ไทย</span>
+          <span className={`${text} font-bold text-white`}>พรรณไม้</span>
+          <span className="text-xs text-white/70 -mt-1">ไทย</span>
         </div>
       )}
     </div>

@@ -1,31 +1,19 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Search as SearchIcon } from "lucide-react";
 import { categories } from "@/data/plants";
 import { usePlants } from "@/hooks/use-plants";
 import PlantCard from "@/components/PlantCard";
 import { Button } from "@/components/ui/button";
-import { useLineContext } from "@/contexts/LineContext";
-import { validateLineConfig } from "@/config/line-config";
 
 const Search = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isLoggedIn, isLoading: authLoading, login } = useLineContext();
   const { plants, loading: plantsLoading, error: plantsError } = usePlants();
   const initialSearch = searchParams.get("q") || "";
   
   const [search, setSearch] = useState(initialSearch);
   const [category, setCategory] = useState("ทั้งหมด");
-
-  // Force login
-  useEffect(() => {
-    if (!authLoading && !isLoggedIn) {
-      if (validateLineConfig()) {
-        login();
-      }
-    }
-  }, [isLoggedIn, authLoading, login]);
 
   const filtered = useMemo(() => {
     return plants.filter((p) => {
@@ -47,16 +35,6 @@ const Search = () => {
       handleSearch();
     }
   };
-
-  // Show loading while authenticating
-  if (authLoading || !isLoggedIn) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        <p className="text-muted-foreground">กำลังเข้าสู่ระบบ...</p>
-      </div>
-    );
-  }
 
   // Show error if plants failed to load
   if (plantsError) {

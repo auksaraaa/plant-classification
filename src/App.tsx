@@ -3,7 +3,6 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { LineProvider } from "@/contexts/LineContext";
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
 import Footer from "./components/Footer";
@@ -21,25 +20,23 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <LineProvider>
-        <BrowserRouter>
-          <div className="flex flex-col min-h-screen">
-            <Navbar />
-            <main className="flex-1 pb-16 md:pb-0">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/search" element={<Search />} />
-                <Route path="/plant/:id" element={<PlantDetail />} />
-                <Route path="/how-to-use" element={<HowToUse />} />
-                <Route path="/about" element={<About />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-            <Footer className="hidden md:block" />
-            <BottomNav />
-          </div>
-        </BrowserRouter>
-      </LineProvider>
+      <BrowserRouter>
+        <div className="flex flex-col min-h-screen">
+          <Navbar />
+          <main className="flex-1 pb-16 md:pb-0">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/plant/:id" element={<PlantDetail />} />
+              <Route path="/how-to-use" element={<HowToUse />} />
+              <Route path="/about" element={<About />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+          <Footer className="hidden md:block" />
+          <BottomNav />
+        </div>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
