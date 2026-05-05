@@ -111,6 +111,52 @@ const PlantDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Additional Images Gallery */}
+      {plant.additionalImages && plant.additionalImages.length > 0 && (
+        <div className="mt-8 sm:mt-12">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-4 sm:mb-6 flex items-center gap-2">
+            <Images className="h-5 w-5 text-primary" />
+            รูปภาพเพิ่มเติม
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+            {plant.additionalImages.map((img, index) => (
+              <button
+                key={index}
+                onClick={() => setSelectedImage(img.image)}
+                className="group relative rounded-xl overflow-hidden plant-card-shadow bg-accent aspect-square cursor-pointer transition-transform hover:scale-[1.02]"
+              >
+                <img
+                  src={img.image}
+                  alt={`${plant.name} - ${img.label}`}
+                  loading="lazy"
+                  width={768}
+                  height={768}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-2 sm:p-3">
+                  <span className="text-white text-xs sm:text-sm font-medium">{img.label}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setSelectedImage(null)}
+        >
+          <img
+            src={selectedImage}
+            alt="รูปภาพขยาย"
+            className="max-w-full max-h-[85vh] rounded-xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 };
