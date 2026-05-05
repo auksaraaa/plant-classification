@@ -23,6 +23,7 @@ const labels: Record<string, string> = {
 const PlantDetail = () => {
   const { id } = useParams();
   const { plant, loading: plantLoading, error: plantError } = usePlant(id);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Show loading while fetching plant data
   if (plantLoading) {
