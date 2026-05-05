@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Leaf, Flower2, Cherry, Ruler, Droplets } from "lucide-react";
+import { ArrowLeft, Leaf, Flower2, Cherry, Ruler, Droplets, Images } from "lucide-react";
 import { usePlant } from "@/hooks/use-plants";
 import { ScientificName } from "@/components/ui/ScientificName";
 
