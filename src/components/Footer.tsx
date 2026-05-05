@@ -28,7 +28,7 @@ const Footer = ({ className = "" }: { className?: string }) => (
         </div>
       </div>
       <div className="border-t mt-8 pt-6 text-center text-sm text-muted-foreground">
-        © 2026 พรรณไม้ไทย. สงวนลิขสิทธิ์ทุกประการ
+        © 2026 Kasetsart University. All Rights Reserved.
       </div>
     </div>
   </footer>

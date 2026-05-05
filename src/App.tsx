@@ -11,7 +11,6 @@ import Index from "./pages/Index";
 import Search from "./pages/Search";
 import PlantDetail from "./pages/PlantDetail";
 import HowToUse from "./pages/HowToUse";
-import Profile from "./pages/Profile";
 import About from "./pages/About";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
@@ -33,7 +32,6 @@ const App = () => (
                 <Route path="/search" element={<Search />} />
                 <Route path="/plant/:id" element={<PlantDetail />} />
                 <Route path="/how-to-use" element={<HowToUse />} />
-                <Route path="/profile" element={<Profile />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="*" element={<NotFound />} />

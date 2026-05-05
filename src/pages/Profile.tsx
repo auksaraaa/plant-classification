@@ -16,13 +16,7 @@ const Profile = () => {
     deleteImageFromHistory,
   } = useImageHistory(profile?.userId);
 
-  // Redirect to home if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isLoggedIn) {
-      toast.error("กรุณาเข้าสู่ระบบก่อน");
-      navigate("/");
-    }
-  }, [authLoading, isLoggedIn, navigate]);
+
 
   const handleLogout = () => {
     logout();

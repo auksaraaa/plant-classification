@@ -1,11 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, Info, User } from "lucide-react";
+import { Home, Search, Info } from "lucide-react";
 
 const bottomNavItems = [
   { path: "/", label: "หน้าแรก", icon: Home },
   { path: "/search", label: "ค้นหา", icon: Search },
   { path: "/about", label: "เกี่ยวกับเรา", icon: Info },
-  { path: "/profile", label: "โปรไฟล์", icon: User },
 ];
 
 const BottomNav = () => {
