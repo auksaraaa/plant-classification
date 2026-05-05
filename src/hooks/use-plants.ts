@@ -28,11 +28,19 @@ export function usePlants() {
     }
   };
 
+  const removePlant = (id: string) => {
+    setPlants((prev) => prev.filter((plant) => plant.id !== id));
+  };
+
+  const updatePlant = (updatedPlant: Plant) => {
+    setPlants((prev) => prev.map((plant) => (plant.id === updatedPlant.id ? updatedPlant : plant)));
+  };
+
   const refresh = async () => {
     await loadPlants();
   };
 
-  return { plants, loading, error, refresh };
+  return { plants, loading, error, refresh, removePlant, updatePlant };
 }
 
 /**

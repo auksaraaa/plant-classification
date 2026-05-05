@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Leaf, Flower2, Cherry, Ruler, Droplets } from "lucide-react";
 import { usePlant } from "@/hooks/use-plants";
+import { ScientificName } from "@/components/ui/ScientificName";
 
 const icons = {
   leaf: Leaf,
@@ -83,7 +84,7 @@ const PlantDetail = () => {
             {plant.category || 'ไม่ระบุ'}
           </span>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mt-3 sm:mt-4">{plant.name}</h1>
-          <p className="text-muted-foreground italic text-sm sm:text-base mt-1 sm:mt-2">{plant.scientificName}</p>
+          <p className="text-muted-foreground text-sm sm:text-base mt-1 sm:mt-2"><ScientificName name={plant.scientificName} /></p>
           <p className="mt-4 sm:mt-6 text-sm sm:text-base text-foreground leading-relaxed">{plant.description}</p>
 
           {plant.characteristics && Object.keys(plant.characteristics).length > 0 && (

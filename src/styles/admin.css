@@ -1,0 +1,172 @@
+/* Admin Dashboard Styles */
+
+/* Card with depth effect */
+.admin-card {
+  border: 1px solid #30363d;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.admin-card:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Stat Cards with gradient backgrounds */
+.stat-card {
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-left: 4px solid;
+  padding: 1.5rem;
+}
+
+.stat-card-today {
+  border-left-color: #3b82f6;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
+}
+
+.stat-card-all {
+  border-left-color: #10b981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+}
+
+.stat-card-accuracy {
+  border-left-color: #a855f7;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, rgba(168, 85, 247, 0.02) 100%);
+}
+
+.stat-card-plants {
+  border-left-color: #059669;
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.05) 0%, rgba(5, 150, 105, 0.02) 100%);
+}
+
+/* Icon styling */
+.stat-icon {
+  font-size: 1.75rem;
+  opacity: 0.9;
+  transition: transform 0.3s ease;
+}
+
+.admin-card:hover .stat-icon {
+  transform: scale(1.1);
+}
+
+/* Stat value with gradient text */
+.stat-value-today {
+  background: linear-gradient(135deg, #3b82f6, #1e40af);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-value-all {
+  background: linear-gradient(135deg, #10b981, #059669);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-value-accuracy {
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-value-plants {
+  background: linear-gradient(135deg, #059669, #065f46);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Top Plants styling */
+.top-plants-container {
+  padding: 1.5rem;
+}
+
+.plant-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-weight: bold;
+  color: white;
+  font-size: 0.875rem;
+}
+
+.plant-rank-1 {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.plant-rank-2 {
+  background: linear-gradient(135deg, #c0c0c0, #a8a8a8);
+  box-shadow: 0 4px 12px rgba(192, 192, 192, 0.3);
+}
+
+.plant-rank-3 {
+  background: linear-gradient(135deg, #cd7f32, #b87333);
+  box-shadow: 0 4px 12px rgba(205, 127, 50, 0.3);
+}
+
+.plant-rank-4,
+.plant-rank-5 {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+/* Progress bar gradient */
+.progress-bar-gradient {
+  background: linear-gradient(90deg, #3b82f6 0%, #10b981 100%);
+  border-radius: 0.25rem;
+  transition: width 0.3s ease;
+}
+
+/* Plant item with hover effect */
+.plant-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.plant-item:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+  transform: translateX(4px);
+}
+
+/* Section spacing */
+.admin-section {
+  margin-bottom: 2rem;
+}
+
+/* Spacing utilities */
+.admin-spacing-lg {
+  padding: 1.5rem;
+}
+
+.admin-spacing-xl {
+  padding: 2rem;
+}
+
+.admin-section-title {
+  background: linear-gradient(135deg, #1f2937, #111827);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* Subtitle styling */
+.admin-subtitle {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
