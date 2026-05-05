@@ -13,6 +13,7 @@ import PlantDetail from "./pages/PlantDetail";
 import HowToUse from "./pages/HowToUse";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,7 +22,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
+      <Sonner position="bottom-right" />
       <LineProvider>
         <BrowserRouter>
           <div className="flex flex-col min-h-screen">
@@ -34,6 +35,7 @@ const App = () => (
                 <Route path="/how-to-use" element={<HowToUse />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/admin" element={<Admin />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

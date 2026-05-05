@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { Plant } from "@/data/plants";
+import { ScientificName } from "./ui/ScientificName";
 
 const PlantCard = ({ plant }: { plant: Plant }) => (
   <Link
@@ -21,7 +22,7 @@ const PlantCard = ({ plant }: { plant: Plant }) => (
         {plant.category}
       </span>
       <h3 className="mt-2 font-semibold text-foreground text-sm sm:text-base leading-snug">{plant.name}</h3>
-      <p className="text-[10px] sm:text-xs text-muted-foreground italic">{plant.scientificName}</p>
+      <p className="text-[10px] sm:text-xs text-muted-foreground"><ScientificName name={plant.scientificName} /></p>
       <p className="mt-1 text-xs sm:text-sm text-muted-foreground line-clamp-2">{plant.shortDescription}</p>
     </div>
   </Link>
