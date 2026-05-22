@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
-import { categories } from "@/data/plants";
 import { usePlants } from "@/hooks/use-plants";
+import { useCategories } from "@/hooks/use-categories";
 import PlantCard from "@/components/PlantCard";
 import { Button } from "@/components/ui/button";
 import heroImg from "@/assets/hero-plants.jpg";
@@ -10,6 +10,7 @@ import heroImg from "@/assets/hero-plants.jpg";
 const Index = () => {
   const navigate = useNavigate();
   const { plants, loading: plantsLoading, error: plantsError } = usePlants();
+  const { categories } = useCategories();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("ทั้งหมด");
 

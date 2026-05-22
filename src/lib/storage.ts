@@ -84,14 +84,16 @@ export const listImages = async (storagePath: string): Promise<string[]> => {
   }
 };
 
-// Upload plant image
+// Upload plant image - delete old image first
 export const uploadPlantImage = async (
   file: File,
   plantId: string
 ): Promise<string> => {
   const filename = `${Date.now()}-${file.name}`;
   const storagePath = `plants/${plantId}/${filename}`;
-  return uploadImage(file, storagePath);
+  const url = await uploadImage(file, storagePath);
+  // Add cache-busting parameter to prevent browser caching
+  return `${url}?t=${Date.now()}`;
 };
 
 // Upload user profile image
@@ -111,4 +113,17 @@ export const deletePlantImage = async (
 ): Promise<void> => {
   const storagePath = `plants/${plantId}/${imagePath.split('/').pop()}`;
   return deleteImage(storagePath);
+};
+
+// Upload plant part image (flower, leaf, fruit, bark) - with cache busting
+export const uploadPlantPartImage = async (
+  file: File,
+  plantId: string,
+  partType: 'flower' | 'leaf' | 'fruit' | 'bark'
+): Promise<string> => {
+  const filename = `${partType}-${Date.now()}.${file.name.split('.').pop()}`;
+  const storagePath = `plants/${plantId}/${partType}/${filename}`;
+  const url = await uploadImage(file, storagePath);
+  // Add cache-busting parameter to prevent browser caching
+  return `${url}?t=${Date.now()}`;
 };

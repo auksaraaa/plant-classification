@@ -1,5 +1,6 @@
 // src/pages/Admin.tsx
 import { useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Users,
   Leaf,
@@ -17,13 +18,16 @@ import {
   Settings,
   Sparkles,
   Bell,
-  LogOut,
   Menu,
   TrendingDown,
   ImageOff,
+  LogOut,
+  Grid3x3,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -59,7 +63,9 @@ import { cn } from "@/lib/utils";
 import { categories } from "@/data/plants";
 import type { Plant } from "@/data/plants";
 import { usePlants } from "@/hooks/use-plants";
+import { useCategories } from "@/hooks/use-categories";
 import { ScientificName } from "@/components/ui/ScientificName";
+import { uploadPlantPartImage, uploadPlantImage, deleteImage } from "@/lib/storage";
 
 import {
   Dialog,
@@ -78,7 +84,7 @@ type Tab = "dashboard" | "plants" | "statistics" | "settings";
 const sidebarItems: { key: Tab; label: string; icon: LucideIcon }[] = [
   { key: "dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
   { key: "plants", label: "จัดการพรรณไม้", icon: Leaf },
-  { key: "statistics", label: "สถิติการใช้งาน", icon: BarChart3 },
+  { key: "statistics", label: "จัดการหมวดหมู่", icon: Grid3x3 },
   { key: "settings", label: "ตั้งค่าระบบ", icon: Settings },
 ];
 
@@ -128,19 +134,14 @@ const AdminSidebar = ({ active, onChange }: { active: Tab; onChange: (t: Tab) =>
 const AdminHeader = ({
   title,
   subtitle,
-  userName,
-  isLoggedIn,
-  onLogout,
   onMenuClick,
+  onLogout,
 }: {
   title: string;
   subtitle?: string;
-  userName?: string;
-  isLoggedIn?: boolean;
-  onLogout?: () => void;
   onMenuClick?: () => void;
+  onLogout?: () => void;
 }) => {
-  const initials = (userName ?? "AD").slice(0, 2).toUpperCase();
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="flex items-center gap-3 px-4 lg:px-8 py-4">
@@ -160,18 +161,22 @@ const AdminHeader = ({
         <div className="flex items-center gap-3 pl-3 border-l border-border">
           <Avatar className="h-9 w-9 ring-2 ring-primary/20">
             <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs font-bold">
-              {initials}
+              AD
             </AvatarFallback>
           </Avatar>
           <div className="hidden sm:block">
-            <p className="text-sm font-semibold leading-tight">{userName || "ผู้ดูแล"}</p>
+            <p className="text-sm font-semibold leading-tight">ผู้ดูแล</p>
             <p className="text-xs text-muted-foreground">Administrator</p>
           </div>
-          {isLoggedIn && (
-            <Button variant="ghost" size="icon" onClick={onLogout} title="ออกจากระบบ">
-              <LogOut className="h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive"
+            onClick={onLogout}
+            title="ออกจากระบบ"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </header>
@@ -276,7 +281,7 @@ const TopPlantsCard = ({ plants }: { plants: { name: string; count: number }[] }
 const mobileItems: { key: Tab; label: string; icon: LucideIcon }[] = [
   { key: "dashboard", label: "หน้าหลัก", icon: LayoutDashboard },
   { key: "plants", label: "พืช", icon: Leaf },
-  { key: "statistics", label: "สถิติ", icon: BarChart3 },
+  { key: "statistics", label: "หมวดหมู่", icon: Grid3x3 },
   { key: "settings", label: "ตั้งค่า", icon: Settings },
 ];
 
@@ -312,19 +317,75 @@ const EditPlantModal = ({
   isOpen,
   onClose,
   onSave,
+  categoryList = [],
 }: {
   plant: Plant | null;
   isOpen: boolean;
   onClose: () => void;
   onSave: (p: Plant) => void;
+  categoryList?: string[];
 }) => {
-  const [formData, setFormData] = useState<Partial<Plant>>({});
+  const [formData, setFormData] = useState<Partial<Plant>>({
+    id: "",
+    name: "",
+    scientificName: "",
+    description: "",
+    shortDescription: "",
+    image: "",
+    category: "",
+    reference: "",
+    ecology: "",
+    benefits: "",
+    iucnStatus: "",
+    images: {
+      flower: "",
+      leaf: "",
+      fruit: "",
+      bark: "",
+    },
+    characteristics: {
+      leaf: "",
+      flower: "",
+      fruit: "",
+      bark: "",
+      height: "",
+    },
+  });
+  const [uploadingParts, setUploadingParts] = useState<Record<string, boolean>>({});
+  const [partPreview, setPartPreview] = useState<Record<string, string>>({});
+  const [uploadingMain, setUploadingMain] = useState(false);
+  const [mainPreview, setMainPreview] = useState("");
 
   useEffect(() => {
     if (plant) {
       setFormData({
-        ...plant,
+        id: plant.id || "",
+        name: plant.name || "",
+        scientificName: plant.scientificName || "",
+        description: plant.description || "",
+        shortDescription: plant.shortDescription || "",
+        image: plant.image || "",
+        category: plant.category || "",
+        reference: plant.reference || "",
+        ecology: plant.ecology || "",
+        benefits: plant.benefits || "",
+        iucnStatus: plant.iucnStatus || "",
+        images: {
+          flower: plant.images?.flower || "",
+          leaf: plant.images?.leaf || "",
+          fruit: plant.images?.fruit || "",
+          bark: plant.images?.bark || "",
+        },
+        characteristics: {
+          leaf: plant.characteristics?.leaf || "",
+          flower: plant.characteristics?.flower || "",
+          fruit: plant.characteristics?.fruit || "",
+          bark: plant.characteristics?.bark || "",
+          height: plant.characteristics?.height || "",
+        },
       });
+      setPartPreview({});
+      setMainPreview("");
     }
   }, [plant]);
 
@@ -333,6 +394,180 @@ const EditPlantModal = ({
   const handleChange = (field: keyof Plant, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  const handleCharacteristicChange = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      characteristics: {
+        ...(prev.characteristics || {}),
+        [field]: value,
+      } as any,
+    }));
+  };
+
+  const handleImagePartUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    partType: 'flower' | 'leaf' | 'fruit' | 'bark'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file || !formData.id) {
+      toast.error("ไม่สามารถอัปโหลดได้", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPartPreview((prev) => ({
+        ...prev,
+        [partType]: reader.result as string,
+      }));
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to Firebase
+    try {
+      setUploadingParts((prev) => ({ ...prev, [partType]: true }));
+      
+      // Delete old image if exists
+      if (formData.images?.[partType]) {
+        try {
+          const oldUrl = formData.images[partType];
+          const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+          if (pathMatch) {
+            const oldPath = decodeURIComponent(pathMatch[1]);
+            await deleteImage(oldPath);
+          }
+        } catch (deleteError) {
+          console.warn('Could not delete old image:', deleteError);
+        }
+      }
+      
+      const url = await uploadPlantPartImage(file, formData.id, partType);
+      setFormData((prev) => ({
+        ...prev,
+        images: {
+          ...(prev.images || {}),
+          [partType]: url,
+        },
+      }));
+      toast.success(`อัปโหลดรูป${partType === 'flower' ? 'ดอก' : partType === 'leaf' ? 'ใบ' : partType === 'fruit' ? 'ผล' : 'เปลือก'}สำเร็จ`, {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } catch (error) {
+      console.error(`Error uploading ${partType}:`, error);
+      toast.error(`เกิดข้อผิดพลาดในการอัปโหลด`, {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } finally {
+      setUploadingParts((prev) => ({ ...prev, [partType]: false }));
+    }
+  };
+
+  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !formData.id) {
+      toast.error("ไม่สามารถอัปโหลดได้", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setMainPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to Firebase
+    try {
+      setUploadingMain(true);
+      
+      // Delete old image if exists
+      if (formData.image && typeof formData.image === 'string') {
+        try {
+          const oldUrl = formData.image;
+          const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+          if (pathMatch) {
+            const oldPath = decodeURIComponent(pathMatch[1]);
+            await deleteImage(oldPath);
+          }
+        } catch (deleteError) {
+          console.warn('Could not delete old image:', deleteError);
+        }
+      }
+      
+      const url = await uploadPlantImage(file, formData.id);
+      setFormData((prev) => ({
+        ...prev,
+        image: url,
+      }));
+      toast.success("อัปโหลดรูปหลักสำเร็จ", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } catch (error) {
+      console.error("Error uploading main image:", error);
+      toast.error("เกิดข้อผิดพลาดในการอัปโหลดรูปหลัก", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } finally {
+      setUploadingMain(false);
+    }
+  };
+
+  const PartImageUploader = ({ partType, label }: { partType: 'flower' | 'leaf' | 'fruit' | 'bark'; label: string }) => (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="flex gap-3 items-end">
+        <div className="w-20 h-20 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted/30 overflow-hidden flex-shrink-0">
+          {partPreview[partType] ? (
+            <img
+              src={partPreview[partType]}
+              alt={label}
+              className="w-full h-full object-cover"
+            />
+          ) : formData.images?.[partType] ? (
+            <img
+              src={formData.images[partType]}
+              alt={label}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+          )}
+        </div>
+        <label className="flex-1">
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleImagePartUpload(e, partType)}
+            disabled={uploadingParts[partType]}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full cursor-pointer"
+            disabled={uploadingParts[partType]}
+            asChild
+          >
+            <span>
+              {uploadingParts[partType] ? "กำลังอัปโหลด..." : "เลือกรูป"}
+            </span>
+          </Button>
+        </label>
+      </div>
+    </div>
+  );
 
   const handleSave = () => {
     if (!formData.name || !formData.scientificName || !formData.category) {
@@ -361,22 +596,39 @@ const EditPlantModal = ({
           <p className="text-sm text-muted-foreground">ปรับปรุงข้อมูลของ {plant.name}</p>
         </DialogHeader>
 
-        <div className="p-6 overflow-y-auto max-h-[70vh] space-y-5">
+        <div className="p-6 overflow-y-auto max-h-[75vh] space-y-5">
           <div className="flex gap-4 items-start">
             <div className="w-24 h-24 shrink-0 rounded-xl border flex items-center justify-center bg-muted overflow-hidden">
-              {formData.image && typeof formData.image === "string" ? (
+              {mainPreview ? (
+                <img src={mainPreview} alt="Main Preview" className="w-full h-full object-cover" />
+              ) : formData.image && typeof formData.image === "string" ? (
                 <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
               ) : (
                 <ImageOff className="h-8 w-8 text-muted-foreground/50" />
               )}
             </div>
             <div className="flex-1 space-y-2">
-              <Label>URL รูปภาพ</Label>
-              <Input
-                placeholder="https://..."
-                value={typeof formData.image === "string" ? formData.image : ""}
-                onChange={(e) => handleChange("image", e.target.value)}
-              />
+              <Label>รูปภาพหลัก</Label>
+              <label className="block">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleMainImageUpload}
+                  disabled={uploadingMain}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full cursor-pointer"
+                  disabled={uploadingMain}
+                  asChild
+                >
+                  <span>
+                    {uploadingMain ? "กำลังอัปโหลด..." : "เลือกรูป"}
+                  </span>
+                </Button>
+              </label>
             </div>
           </div>
 
@@ -398,6 +650,16 @@ const EditPlantModal = ({
           </div>
 
           <div className="space-y-2">
+            <Label>คำอธิบายสั้น</Label>
+            <Textarea
+              className="resize-none h-16"
+              placeholder="คำอธิบายสั้น ๆ (1-2 บรรทัด)"
+              value={formData.shortDescription || ""}
+              onChange={(e) => handleChange("shortDescription", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label>หมวดหมู่ <span className="text-destructive">*</span></Label>
             <Select
               value={formData.category || ""}
@@ -407,13 +669,23 @@ const EditPlantModal = ({
                 <SelectValue placeholder="เลือกหมวดหมู่" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((cat) => (
+                {(categoryList && categoryList.length > 0 ? categoryList : categories).map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-semibold text-base">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <PartImageUploader partType="leaf" label="รูปใบ" />
+              <PartImageUploader partType="flower" label="รูปดอก" />
+              <PartImageUploader partType="fruit" label="รูปผล" />
+              <PartImageUploader partType="bark" label="รูปเปลือก" />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -425,14 +697,631 @@ const EditPlantModal = ({
               onChange={(e) => handleChange("description", e.target.value)}
             />
           </div>
+
+          <div className="space-y-2">
+            <Label>ความสูง</Label>
+            <Input
+              value={formData.characteristics?.height || ""}
+              onChange={(e) => handleCharacteristicChange("height", e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label>ลักษณะของใบ</Label>
+              <Textarea
+                className="resize-none h-16"
+                value={formData.characteristics?.leaf || ""}
+                onChange={(e) => handleCharacteristicChange("leaf", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>ลักษณะของดอกไม้</Label>
+              <Textarea
+                className="resize-none h-16"
+                value={formData.characteristics?.flower || ""}
+                onChange={(e) => handleCharacteristicChange("flower", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>ลักษณะของผล</Label>
+              <Textarea
+                className="resize-none h-16"
+                value={formData.characteristics?.fruit || ""}
+                onChange={(e) => handleCharacteristicChange("fruit", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>ลักษณะของเปลือก</Label>
+              <Textarea
+                className="resize-none h-16"
+                value={formData.characteristics?.bark || ""}
+                onChange={(e) => handleCharacteristicChange("bark", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>นิเวศวิทยาและการกระจายพันธุ์</Label>
+            <Textarea
+              className="resize-none h-20"
+              placeholder="อธิบายข้อมูลเกี่ยวกับสภาพแวดล้อม ที่อยู่อาศัย และพื้นที่ที่พบของพรรณไม้"
+              value={formData.ecology || ""}
+              onChange={(e) => handleChange("ecology", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>ประโยชน์/โทษ</Label>
+            <Textarea
+              className="resize-none h-20"
+              placeholder="ประโยชน์ที่ได้รับจากพรรณไม้ และความเสี่ยงหรือโทษที่อาจเกิดขึ้น"
+              value={formData.benefits || ""}
+              onChange={(e) => handleChange("benefits", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>สถานะการอนุรักษ์ IUCN Red List 2022</Label>
+            <Select
+              value={formData.iucnStatus || ""}
+              onValueChange={(val) => handleChange("iucnStatus", val)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="เลือกสถานะการอนุรักษ์" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Extinct">สูญพันธุ์ (Extinct - EX)</SelectItem>
+                <SelectItem value="Extinct in the Wild">สูญพันธุ์ในถิ่นกำเนิด (Extinct in the Wild - EW)</SelectItem>
+                <SelectItem value="Critically Endangered">วิกฤตอย่างยิ่ง (Critically Endangered - CR)</SelectItem>
+                <SelectItem value="Endangered">วิกฤต (Endangered - EN)</SelectItem>
+                <SelectItem value="Vulnerable">เสี่ยงวิกฤต (Vulnerable - VU)</SelectItem>
+                <SelectItem value="Near Threatened">ใกล้เสี่ยงวิกฤต (Near Threatened - NT)</SelectItem>
+                <SelectItem value="Least Concern">ไม่เสี่ยง (Least Concern - LC)</SelectItem>
+                <SelectItem value="Data Deficient">ข้อมูลไม่พอ (Data Deficient - DD)</SelectItem>
+                <SelectItem value="Not Evaluated">ยังไม่ได้ประเมิน (Not Evaluated - NE)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>อ้างอิง</Label>
+            <Textarea
+              className="resize-none h-16"
+              placeholder="แหล่งอ้างอิง หรือ URL ที่ปลูกจากมา"
+              value={formData.reference || ""}
+              onChange={(e) => handleChange("reference", e.target.value)}
+            />
+          </div>
         </div>
 
         <DialogFooter className="px-6 py-4 border-t bg-muted/30 flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={Object.values(uploadingParts).some(v => v) || uploadingMain}>
             ยกเลิก
           </Button>
-          <Button className="bg-[#319b5d] hover:bg-[#28844f] text-white" onClick={handleSave}>
+          <Button 
+            className="bg-[#319b5d] hover:bg-[#28844f] text-white" 
+            onClick={handleSave}
+            disabled={Object.values(uploadingParts).some(v => v) || uploadingMain}
+          >
             บันทึกการแก้ไข
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+/* ========================= ADD PLANT MODAL ========================= */
+const AddPlantModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  isLoading,
+  categoryList = [],
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (p: Plant) => Promise<void>;
+  isLoading?: boolean;
+  categoryList?: string[];
+}) => {
+  const [formData, setFormData] = useState<Partial<Plant>>({
+    id: "",
+    name: "",
+    scientificName: "",
+    description: "",
+    shortDescription: "",
+    image: "",
+    category: "ทั้งหมด",
+    reference: "",
+    ecology: "",
+    benefits: "",
+    iucnStatus: "",
+    images: {
+      flower: "",
+      leaf: "",
+      fruit: "",
+      bark: "",
+    },
+    characteristics: {
+      leaf: "",
+      flower: "",
+      fruit: "",
+      bark: "",
+      height: "",
+    },
+  });
+
+  const [uploadingParts, setUploadingParts] = useState<Record<string, boolean>>({});
+  const [partPreview, setPartPreview] = useState<Record<string, string>>({});
+  const [uploadingMain, setUploadingMain] = useState(false);
+  const [mainPreview, setMainPreview] = useState("");
+
+  const handleChange = (field: keyof Plant, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCharacteristicChange = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      characteristics: {
+        ...(prev.characteristics || {}),
+        [field]: value,
+      } as any,
+    }));
+  };
+
+  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !formData.id) {
+      toast.error("กรุณากรอก ID ของพรรณไม้ก่อน", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setMainPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to Firebase
+    try {
+      setUploadingMain(true);
+      
+      // Delete old image if exists
+      if (formData.image && typeof formData.image === 'string') {
+        try {
+          const oldUrl = formData.image;
+          const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+          if (pathMatch) {
+            const oldPath = decodeURIComponent(pathMatch[1]);
+            await deleteImage(oldPath);
+          }
+        } catch (deleteError) {
+          console.warn('Could not delete old image:', deleteError);
+        }
+      }
+      
+      const url = await uploadPlantImage(file, formData.id);
+      setFormData((prev) => ({
+        ...prev,
+        image: url,
+      }));
+      toast.success("อัปโหลดรูปหลักสำเร็จ", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } catch (error) {
+      console.error("Error uploading main image:", error);
+      toast.error("เกิดข้อผิดพลาดในการอัปโหลดรูปหลัก", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } finally {
+      setUploadingMain(false);
+    }
+  };
+
+  const handleImagePartUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    partType: 'flower' | 'leaf' | 'fruit' | 'bark'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file || !formData.id) {
+      toast.error("กรุณากรอก ID ของพรรณไม้ก่อน", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPartPreview((prev) => ({
+        ...prev,
+        [partType]: reader.result as string,
+      }));
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to Firebase
+    try {
+      setUploadingParts((prev) => ({ ...prev, [partType]: true }));
+      
+      // Delete old image if exists
+      if (formData.images?.[partType]) {
+        try {
+          const oldUrl = formData.images[partType];
+          const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+          if (pathMatch) {
+            const oldPath = decodeURIComponent(pathMatch[1]);
+            await deleteImage(oldPath);
+          }
+        } catch (deleteError) {
+          console.warn('Could not delete old image:', deleteError);
+        }
+      }
+      
+      const url = await uploadPlantPartImage(file, formData.id, partType);
+      setFormData((prev) => ({
+        ...prev,
+        images: {
+          ...(prev.images || {}),
+          [partType]: url,
+        },
+      }));
+      toast.success(`อัปโหลดรูป${partType === 'flower' ? 'ดอก' : partType === 'leaf' ? 'ใบ' : partType === 'fruit' ? 'ผล' : 'เปลือก'}สำเร็จ`, {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } catch (error) {
+      console.error(`Error uploading ${partType}:`, error);
+      toast.error(`เกิดข้อผิดพลาดในการอัปโหลดรูป${partType === 'flower' ? 'ดอก' : partType === 'leaf' ? 'ใบ' : partType === 'fruit' ? 'ผล' : 'เปลือก'}`, {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } finally {
+      setUploadingParts((prev) => ({ ...prev, [partType]: false }));
+    }
+  };
+
+  const PartImageUploader = ({ partType, label }: { partType: 'flower' | 'leaf' | 'fruit' | 'bark'; label: string }) => (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="flex gap-3 items-end">
+        <div className="w-20 h-20 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted/30 overflow-hidden flex-shrink-0">
+          {partPreview[partType] ? (
+            <img
+              src={partPreview[partType]}
+              alt={label}
+              className="w-full h-full object-cover"
+            />
+          ) : formData.images?.[partType] ? (
+            <img
+              src={formData.images[partType]}
+              alt={label}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+          )}
+        </div>
+        <label className="flex-1">
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleImagePartUpload(e, partType)}
+            disabled={uploadingParts[partType]}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full cursor-pointer"
+            disabled={uploadingParts[partType]}
+            asChild
+          >
+            <span>
+              {uploadingParts[partType] ? "กำลังอัปโหลด..." : "เลือกรูป"}
+            </span>
+          </Button>
+        </label>
+      </div>
+    </div>
+  );
+
+  const handleSave = async () => {
+    if (!formData.id || !formData.name || !formData.scientificName || !formData.category) {
+      toast.error("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน", {
+        position: "bottom-right",
+        style: {
+          background: "#FAE251",
+          color: "#000",
+          borderColor: "#F0D642",
+        },
+      });
+      return;
+    }
+
+    try {
+      await onSave(formData as Plant);
+      setFormData({
+        id: "",
+        name: "",
+        scientificName: "",
+        description: "",
+        shortDescription: "",
+        image: "",
+        category: "",
+        reference: "",
+        ecology: "",
+        benefits: "",
+        iucnStatus: "",
+        images: {
+          flower: "",
+          leaf: "",
+          fruit: "",
+          bark: "",
+        },
+        characteristics: {
+          leaf: "",
+          flower: "",
+          fruit: "",
+          bark: "",
+          height: "",
+        },
+      });
+      setPartPreview({});
+      setMainPreview("");
+      onClose();
+    } catch (error) {
+      toast.error("เกิดข้อผิดพลาดในการเพิ่มข้อมูล", {
+        position: "bottom-right",
+        style: {
+          background: "#FAE251",
+          color: "#000",
+          borderColor: "#F0D642",
+        },
+      });
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden gap-0">
+        <DialogHeader className="px-6 py-4 border-b">
+          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+            <Plus className="h-5 w-5 text-primary" />
+            เพิ่มพรรณไม้ใหม่
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground">เพิ่มข้อมูลพรรณไม้ใหม่เข้าระบบ</p>
+        </DialogHeader>
+
+        <div className="p-6 overflow-y-auto max-h-[75vh] space-y-5">
+          <div className="space-y-2">
+            <Label>ID (รหัสประจำตัว) <span className="text-destructive">*</span></Label>
+            <Input
+              placeholder="เช่น taku, lavender"
+              value={formData.id || ""}
+              onChange={(e) => handleChange("id", e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">ไม่เว้นวรรค หรือใช้เครื่องหมายพิเศษ</p>
+          </div>
+
+          <div className="flex gap-4 items-start">
+            <div className="w-24 h-24 shrink-0 rounded-xl border flex items-center justify-center bg-muted overflow-hidden">
+              {mainPreview ? (
+                <img src={mainPreview} alt="Main Preview" className="w-full h-full object-cover" />
+              ) : formData.image && typeof formData.image === "string" ? (
+                <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+              )}
+            </div>
+            <div className="flex-1 space-y-2">
+              <Label>รูปภาพหลัก</Label>
+              <label className="block">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleMainImageUpload}
+                  disabled={uploadingMain}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full cursor-pointer"
+                  disabled={uploadingMain}
+                  asChild
+                >
+                  <span>
+                    {uploadingMain ? "กำลังอัปโหลด..." : "เลือกรูป"}
+                  </span>
+                </Button>
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>ชื่อ <span className="text-destructive">*</span></Label>
+            <Input
+              value={formData.name || ""}
+              onChange={(e) => handleChange("name", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>ชื่อวิทยาศาสตร์ <span className="text-destructive">*</span></Label>
+            <Input
+              value={formData.scientificName || ""}
+              onChange={(e) => handleChange("scientificName", e.target.value)}
+              className="italic"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>คำอธิบายสั้น</Label>
+            <Textarea
+              className="resize-none h-16"
+              placeholder="คำอธิบายสั้น ๆ (1-2 บรรทัด)"
+              value={formData.shortDescription || ""}
+              onChange={(e) => handleChange("shortDescription", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>หมวดหมู่ <span className="text-destructive">*</span></Label>
+            <Select
+              value={formData.category || ""}
+              onValueChange={(val) => handleChange("category", val)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="เลือกหมวดหมู่" />
+              </SelectTrigger>
+              <SelectContent>
+                {(categoryList && categoryList.length > 0 ? categoryList : categories).map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-semibold text-base">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <PartImageUploader partType="leaf" label="รูปใบ" />
+              <PartImageUploader partType="flower" label="รูปดอก" />
+              <PartImageUploader partType="fruit" label="รูปผล" />
+              <PartImageUploader partType="bark" label="รูปเปลือก" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>รายละเอียด</Label>
+            <Textarea
+              className="resize-none h-24"
+              placeholder="ลักษณะเด่น สรรพคุณ การดูแล ฯลฯ"
+              value={formData.description || ""}
+              onChange={(e) => handleChange("description", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>ความสูง</Label>
+            <Input
+              value={formData.characteristics?.height || ""}
+              onChange={(e) => handleCharacteristicChange("height", e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label>ลักษณะของใบ</Label>
+              <Textarea
+                className="resize-none h-16"
+                value={formData.characteristics?.leaf || ""}
+                onChange={(e) => handleCharacteristicChange("leaf", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>ลักษณะของดอกไม้</Label>
+              <Textarea
+                className="resize-none h-16"
+                value={formData.characteristics?.flower || ""}
+                onChange={(e) => handleCharacteristicChange("flower", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>ลักษณะของผล</Label>
+              <Textarea
+                className="resize-none h-16"
+                value={formData.characteristics?.fruit || ""}
+                onChange={(e) => handleCharacteristicChange("fruit", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>ลักษณะของเปลือก</Label>
+              <Textarea
+                className="resize-none h-16"
+                value={formData.characteristics?.bark || ""}
+                onChange={(e) => handleCharacteristicChange("bark", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>นิเวศวิทยาและการกระจายพันธุ์</Label>
+            <Textarea
+              className="resize-none h-20"
+              placeholder="อธิบายข้อมูลเกี่ยวกับสภาพแวดล้อม ที่อยู่อาศัย และพื้นที่ที่พบของพรรณไม้"
+              value={formData.ecology || ""}
+              onChange={(e) => handleChange("ecology", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>ประโยชน์/โทษ</Label>
+            <Textarea
+              className="resize-none h-20"
+              placeholder="ประโยชน์ที่ได้รับจากพรรณไม้ และความเสี่ยงหรือโทษที่อาจเกิดขึ้น"
+              value={formData.benefits || ""}
+              onChange={(e) => handleChange("benefits", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>สถานะการอนุรักษ์ IUCN Red List 2022</Label>
+            <Select
+              value={formData.iucnStatus || ""}
+              onValueChange={(val) => handleChange("iucnStatus", val)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="เลือกสถานะการอนุรักษ์" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Extinct">สูญพันธุ์ (Extinct - EX)</SelectItem>
+                <SelectItem value="Extinct in the Wild">สูญพันธุ์ในถิ่นกำเนิด (Extinct in the Wild - EW)</SelectItem>
+                <SelectItem value="Critically Endangered">วิกฤตอย่างยิ่ง (Critically Endangered - CR)</SelectItem>
+                <SelectItem value="Endangered">วิกฤต (Endangered - EN)</SelectItem>
+                <SelectItem value="Vulnerable">เสี่ยงวิกฤต (Vulnerable - VU)</SelectItem>
+                <SelectItem value="Near Threatened">ใกล้เสี่ยงวิกฤต (Near Threatened - NT)</SelectItem>
+                <SelectItem value="Least Concern">ไม่เสี่ยง (Least Concern - LC)</SelectItem>
+                <SelectItem value="Data Deficient">ข้อมูลไม่พอ (Data Deficient - DD)</SelectItem>
+                <SelectItem value="Not Evaluated">ยังไม่ได้ประเมิน (Not Evaluated - NE)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>อ้างอิง</Label>
+            <Textarea
+              className="resize-none h-16"
+              placeholder="แหล่งอ้างอิง หรือ URL ที่ปลูกจากมา"
+              value={formData.reference || ""}
+              onChange={(e) => handleChange("reference", e.target.value)}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="px-6 py-4 border-t bg-muted/30 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isLoading || Object.values(uploadingParts).some(v => v) || uploadingMain}>
+            ยกเลิก
+          </Button>
+          <Button 
+            className="bg-[#319b5d] hover:bg-[#28844f] text-white" 
+            onClick={handleSave}
+            disabled={isLoading || Object.values(uploadingParts).some(v => v) || uploadingMain}
+          >
+            {isLoading ? "กำลังบันทึก..." : "เพิ่มพรรณไม้"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -442,11 +1331,64 @@ const EditPlantModal = ({
 
 /* ========================= MAIN PAGE ========================= */
 const Admin = () => {
-  const { plants, removePlant, updatePlant } = usePlants();
+  const navigate = useNavigate();
+  const { isAuthenticated, loading, logout } = useAdminAuth();
+  const { plants, removePlant, updatePlant, addPlant } = usePlants();
+  const { categories: categoryList, addCategory, deleteCategory, updateCategory } = useCategories();
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
   const [editingPlant, setEditingPlant] = useState<Plant | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [editingCategory, setEditingCategory] = useState<{ index: number; name: string } | null>(null);
+
+  // Define useMemo BEFORE early returns
+  const filteredPlants = useMemo(() => {
+    return plants.filter((plant) => {
+      const matchSearch =
+        plant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        plant.scientificName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchCategory =
+        selectedCategory === "ทั้งหมด" || plant.category === selectedCategory;
+      return matchSearch && matchCategory;
+    });
+  }, [plants, searchTerm, selectedCategory]);
+
+  // Check authentication
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate("/admin-login");
+    }
+  }, [isAuthenticated, loading, navigate]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("ออกจากระบบสำเร็จ");
+      navigate("/admin-login");
+    } catch (error) {
+      toast.error("ออกจากระบบล้มเหลว");
+    }
+  };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Leaf className="h-8 w-8 animate-spin mx-auto mb-3 text-primary" />
+          <p className="text-muted-foreground">กำลังตรวจสอบสิทธิ์...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show nothing if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const stats = {
     todayClassifications: 24,
@@ -462,21 +1404,98 @@ const Admin = () => {
     ],
   };
 
-  const filteredPlants = useMemo(() => {
-    return plants.filter((plant) => {
-      const matchSearch =
-        plant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        plant.scientificName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchCategory =
-        selectedCategory === "ทั้งหมด" || plant.category === selectedCategory;
-      return matchSearch && matchCategory;
-    });
-  }, [plants, searchTerm, selectedCategory]);
+  // Category management handlers
+  const handleAddCategory = async () => {
+    if (!newCategory.trim()) return;
+    
+    try {
+      if (categoryList.includes(newCategory.trim())) {
+        toast.error("หมวดหมู่นี้มีอยู่แล้ว", {
+          position: "bottom-right",
+          style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+        });
+        return;
+      }
+      
+      await addCategory(newCategory.trim());
+      setNewCategory("");
+      toast.success("เพิ่มหมวดหมู่สำเร็จ", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } catch (err) {
+      console.error("Error adding category:", err);
+      toast.error("เกิดข้อผิดพลาดในการเพิ่มหมวดหมู่", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    }
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!editingCategory) return;
+    
+    try {
+      const oldName = categoryList[editingCategory.index];
+      const newName = editingCategory.name.trim();
+      
+      if (!newName) return;
+      if (oldName === newName) {
+        setEditingCategory(null);
+        return;
+      }
+      if (categoryList.includes(newName)) {
+        toast.error("หมวดหมู่นี้มีอยู่แล้ว", {
+          position: "bottom-right",
+          style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+        });
+        return;
+      }
+      
+      await updateCategory(oldName, newName);
+      setEditingCategory(null);
+      toast.success("อัปเดตหมวดหมู่สำเร็จ", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } catch (err) {
+      console.error("Error updating category:", err);
+      toast.error("เกิดข้อผิดพลาดในการอัปเดตหมวดหมู่", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    }
+  };
+
+  const handleDeleteCategory = async (idx: number) => {
+    try {
+      const catName = categoryList[idx];
+      if (catName === "ทั้งหมด") {
+        toast.error("ไม่สามารถลบหมวดหมู่ \"ทั้งหมด\" ได้", {
+          position: "bottom-right",
+          style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+        });
+        return;
+      }
+      
+      await deleteCategory(catName);
+      toast.success(`ลบหมวดหมู่ "${catName}" แล้ว`, {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } catch (err) {
+      console.error("Error deleting category:", err);
+      toast.error("เกิดข้อผิดพลาดในการลบหมวดหมู่", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    }
+  };
 
   const titleMap: Record<Tab, { title: string; subtitle: string }> = {
     dashboard: { title: "แดชบอร์ด", subtitle: "ภาพรวมการใช้งานระบบจำแนกพรรณไม้วันนี้" },
     plants: { title: "จัดการพรรณไม้", subtitle: "เพิ่ม แก้ไข และลบข้อมูลพรรณไม้ในระบบ" },
-    statistics: { title: "สถิติการใช้งาน", subtitle: "วิเคราะห์พฤติกรรมผู้ใช้และประสิทธิภาพระบบ" },
+    statistics: { title: "จัดการหมวดหมู่", subtitle: "เพิ่ม แก้ไข และลบหมวดหมู่พรรณไม้" },
     settings: { title: "ตั้งค่าระบบ", subtitle: "จัดการการตั้งค่าและความปลอดภัย" },
   };
 
@@ -488,7 +1507,7 @@ const Admin = () => {
         <AdminHeader
           title={titleMap[activeTab].title}
           subtitle={titleMap[activeTab].subtitle}
-          userName="ผู้ดูแล"
+          onLogout={handleLogout}
         />
 
         <main className="flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-8 space-y-6">
@@ -523,7 +1542,7 @@ const Admin = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((cat) => (
+                        {(categoryList && categoryList.length > 0 ? categoryList : categories).map((cat) => (
                           <SelectItem 
                             key={cat} 
                             value={cat}
@@ -534,7 +1553,10 @@ const Admin = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button className="w-full lg:w-auto bg-[#319b5d] hover:bg-[#28844f] text-white font-semibold gap-2 h-11 shrink-0">
+                    <Button 
+                      className="w-full lg:w-auto bg-[#319b5d] hover:bg-[#28844f] text-white font-semibold gap-2 h-11 shrink-0"
+                      onClick={() => setIsAddModalOpen(true)}
+                    >
                       <Plus className="h-4 w-4" />
                       เพิ่มพรรณไม้
                     </Button>
@@ -610,16 +1632,27 @@ const Admin = () => {
                                       <AlertDialogFooter>
                                         <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
                                         <AlertDialogAction
-                                          onClick={() => {
-                                            removePlant(plant.id);
-                                            toast.success(`ลบ ${plant.name} แล้ว`, {
-                                              position: "bottom-right",
-                                              style: {
-                                                background: "#FAE251",
-                                                color: "#000",
-                                                borderColor: "#F0D642",
-                                              },
-                                            });
+                                          onClick={async () => {
+                                            try {
+                                              await removePlant(plant.id);
+                                              toast.success(`ลบ ${plant.name} แล้ว`, {
+                                                position: "bottom-right",
+                                                style: {
+                                                  background: "#FAE251",
+                                                  color: "#000",
+                                                  borderColor: "#F0D642",
+                                                },
+                                              });
+                                            } catch (error) {
+                                              toast.error(`เกิดข้อผิดพลาดในการลบ ${plant.name}`, {
+                                                position: "bottom-right",
+                                                style: {
+                                                  background: "#FAE251",
+                                                  color: "#000",
+                                                  borderColor: "#F0D642",
+                                                },
+                                              });
+                                            }
                                           }}
                                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                         >
@@ -643,46 +1676,127 @@ const Admin = () => {
 
           {activeTab === "statistics" && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <StatCard label="ผู้ใช้วันนี้" value={stats.usersToday} hint="กำลังใช้งาน" icon={Users} tone="primary" trend={{ value: 5, positive: true }} />
-                <StatCard label="ผู้ใช้ทั้งหมด" value={stats.totalUsers} hint="ลงทะเบียนแล้ว" icon={Users} tone="info" trend={{ value: 18, positive: true }} />
-              </div>
+              <Card className="border-border/60 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 font-display text-lg">
+                    <Grid3x3 className="h-5 w-5 text-primary" />
+                    เพิ่มหมวดหมู่ใหม่
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="ชื่อหมวดหมู่ใหม่..."
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter" && newCategory.trim()) {
+                          handleAddCategory();
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    <Button
+                      className="bg-[#319b5d] hover:bg-[#28844f] text-white font-semibold gap-2 h-11 shrink-0"
+                      onClick={handleAddCategory}
+                    >
+                      <Plus className="h-4 w-4" />
+                      เพิ่ม
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
               <Card className="border-border/60 shadow-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 font-display text-lg">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    สรุปสถิติรายละเอียด
+                    <Grid3x3 className="h-5 w-5 text-primary" />
+                    รายการหมวดหมู่ ({categoryList.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      { label: "การจำแนกวันนี้", value: stats.todayClassifications, icon: Calendar },
-                      { label: "การจำแนกทั้งหมด", value: stats.totalClassifications.toLocaleString(), icon: Target },
-                      { label: "จำนวนพรรณไม้", value: plants.length, icon: Leaf },
-                    ].map((row) => {
-                      const Icon = row.icon;
-                      return (
-                        <div
-                          key={row.label}
-                          className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-4 hover:bg-muted/50 transition"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                              <Icon className="h-4 w-4 text-primary" />
-                            </div>
-                            <span className="text-sm font-medium text-muted-foreground">
-                              {row.label}
-                            </span>
-                          </div>
-                          <span className="font-display text-xl font-bold tabular-nums">
-                            {row.value}
-                          </span>
+                  {editingCategory ? (
+                    <div className="flex gap-2 mb-4">
+                      <Input
+                        autoFocus
+                        value={editingCategory.name}
+                        onChange={(e) =>
+                          setEditingCategory({ ...editingCategory, name: e.target.value })
+                        }
+                        onKeyPress={(e) => {
+                          if (e.key === "Enter") {
+                            handleUpdateCategory();
+                          }
+                        }}
+                      />
+                      <Button
+                        className="bg-[#319b5d] hover:bg-[#28844f] text-white font-semibold"
+                        onClick={handleUpdateCategory}
+                      >
+                        บันทึก
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setEditingCategory(null)}
+                      >
+                        ยกเลิก
+                      </Button>
+                    </div>
+                  ) : null}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {categoryList.map((cat, idx) => (
+                      <div
+                        key={cat}
+                        className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3 hover:bg-muted/50 transition"
+                      >
+                        <span className="font-medium text-sm">{cat}</span>
+                        <div className="flex gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 hover:text-blue-600"
+                            onClick={() => setEditingCategory({ index: idx, name: cat })}
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 hover:text-destructive"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>ยืนยันการลบหมวดหมู่</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  คุณต้องการลบหมวดหมู่ "{cat}" ใช่หรือไม่?
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteCategory(idx)}
+                                  className="bg-destructive hover:bg-destructive/90"
+                                >
+                                  ลบ
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
+                  {categoryList.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Grid3x3 className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                      <p>ยังไม่มีหมวดหมู่ ให้เพิ่มหมวดหมู่ใหม่</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </>
@@ -706,19 +1820,65 @@ const Admin = () => {
         plant={editingPlant}
         isOpen={!!editingPlant}
         onClose={() => setEditingPlant(null)}
-        onSave={(updatedPlant) => {
+        categoryList={categoryList}
+        onSave={async (updatedPlant) => {
           if (updatePlant) {
-            updatePlant(updatedPlant);
-            toast.success("อัปเดตข้อมูลพรรณไม้สำเร็จ", {
-              position: "bottom-right",
-              style: {
-                background: "#FAE251",
-                color: "#000",
-                borderColor: "#F0D642",
-              },
-            });
+            try {
+              await updatePlant(updatedPlant);
+              toast.success("อัปเดตข้อมูลพรรณไม้สำเร็จ", {
+                position: "bottom-right",
+                style: {
+                  background: "#FAE251",
+                  color: "#000",
+                  borderColor: "#F0D642",
+                },
+              });
+            } catch (error) {
+              toast.error("เกิดข้อผิดพลาดในการอัปเดต", {
+                position: "bottom-right",
+                style: {
+                  background: "#FAE251",
+                  color: "#000",
+                  borderColor: "#F0D642",
+                },
+              });
+            }
           }
         }}
+      />
+      <AddPlantModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        categoryList={categoryList}
+        onSave={async (newPlant) => {
+          if (addPlant) {
+            try {
+              setIsSaving(true);
+              await addPlant(newPlant);
+              toast.success("เพิ่มพรรณไม้สำเร็จ", {
+                position: "bottom-right",
+                style: {
+                  background: "#FAE251",
+                  color: "#000",
+                  borderColor: "#F0D642",
+                },
+              });
+            } catch (error) {
+              console.error("Error adding plant:", error);
+              toast.error("เกิดข้อผิดพลาดในการเพิ่มข้อมูล", {
+                position: "bottom-right",
+                style: {
+                  background: "#FAE251",
+                  color: "#000",
+                  borderColor: "#F0D642",
+                },
+              });
+            } finally {
+              setIsSaving(false);
+            }
+          }
+        }}
+        isLoading={isSaving}
       />
     </div>
   );

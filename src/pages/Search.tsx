@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Search as SearchIcon } from "lucide-react";
-import { categories } from "@/data/plants";
 import { usePlants } from "@/hooks/use-plants";
+import { useCategories } from "@/hooks/use-categories";
 import PlantCard from "@/components/PlantCard";
 import { Button } from "@/components/ui/button";
 
@@ -10,6 +10,7 @@ const Search = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { plants, loading: plantsLoading, error: plantsError } = usePlants();
+  const { categories } = useCategories();
   const initialSearch = searchParams.get("q") || "";
   
   const [search, setSearch] = useState(initialSearch);

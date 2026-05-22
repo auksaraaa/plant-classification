@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,9 +12,35 @@ import PlantDetail from "./pages/PlantDetail";
 import HowToUse from "./pages/HowToUse";
 import About from "./pages/About";
 import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+const AppContent = () => {
+  const location = useLocation();
+  const isAdminLogin = location.pathname === "/admin-login";
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {!isAdminLogin && <Navbar />}
+      <main className="flex-1 pb-16 md:pb-0">
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/plant/:id" element={<PlantDetail />} />
+          <Route path="/how-to-use" element={<HowToUse />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+      {!isAdminLogin && <Footer className="hidden md:block" />}
+      {!isAdminLogin && <BottomNav />}
+    </div>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -22,22 +48,7 @@ const App = () => (
       <Toaster />
       <Sonner position="bottom-right" />
       <BrowserRouter>
-        <div className="flex flex-col min-h-screen">
-          <Navbar />
-          <main className="flex-1 pb-16 md:pb-0">
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/plant/:id" element={<PlantDetail />} />
-              <Route path="/how-to-use" element={<HowToUse />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </main>
-          <Footer className="hidden md:block" />
-          <BottomNav />
-        </div>
+        <AppContent />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

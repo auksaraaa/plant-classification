@@ -19,6 +19,7 @@ const Footer = ({ className = "" }: { className?: string }) => (
             <Link to="/" className="hover:text-primary transition-colors">หน้าแรก</Link>
             <Link to="/how-to-use" className="hover:text-primary transition-colors">วิธีใช้งาน</Link>
             <Link to="/about" className="hover:text-primary transition-colors">เกี่ยวกับเรา</Link>
+            <Link to="/admin" className="hover:text-primary transition-colors">ผู้ดูแลระบบ</Link>
           </div>
         </div>
         <div>
