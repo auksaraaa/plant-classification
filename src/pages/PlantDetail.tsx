@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Leaf, Flower2, Cherry, Ruler, Layers, Sprout, Shield, AlertCircle, ImageOff, X } from "lucide-react";
 import { usePlant } from "@/hooks/use-plants";
