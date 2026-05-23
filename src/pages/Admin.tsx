@@ -606,6 +606,69 @@ const EditPlantModal = ({
     }
   };
 
+  const handleDeleteMainImage = async () => {
+    if (!formData.image || typeof formData.image !== 'string') return;
+    
+    try {
+      const oldUrl = formData.image;
+      const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+      if (pathMatch) {
+        const oldPath = decodeURIComponent(pathMatch[1]);
+        await deleteImage(oldPath);
+      }
+      setFormData((prev) => ({
+        ...prev,
+        image: "",
+      }));
+      setMainPreview("");
+      toast.success("ลบรูปหลักสำเร็จ", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } catch (error) {
+      console.error("Error deleting main image:", error);
+      toast.error("เกิดข้อผิดพลาดในการลบรูป", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    }
+  };
+
+  const handleDeletePartImage = async (partType: 'flower' | 'leaf' | 'fruit' | 'bark') => {
+    if (!formData.images?.[partType]) return;
+    
+    try {
+      const oldUrl = formData.images[partType];
+      const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+      if (pathMatch) {
+        const oldPath = decodeURIComponent(pathMatch[1]);
+        await deleteImage(oldPath);
+      }
+      setFormData((prev) => ({
+        ...prev,
+        images: {
+          ...(prev.images || {}),
+          [partType]: "",
+        },
+      }));
+      setPartPreview((prev) => {
+        const newPreview = { ...prev };
+        delete newPreview[partType];
+        return newPreview;
+      });
+      toast.success("ลบรูปสำเร็จ", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } catch (error) {
+      console.error(`Error deleting ${partType} image:`, error);
+      toast.error("เกิดข้อผิดพลาดในการลบรูป", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    }
+  };
+
   const PartImageUploader = ({ partType, label }: { partType: 'flower' | 'leaf' | 'fruit' | 'bark'; label: string }) => (
     <div className="space-y-2">
       <Label>{label}</Label>
@@ -627,26 +690,38 @@ const EditPlantModal = ({
             <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
           )}
         </div>
-        <label className="flex-1">
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => handleImagePartUpload(e, partType)}
-            disabled={uploadingParts[partType]}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full cursor-pointer"
-            disabled={uploadingParts[partType]}
-            asChild
-          >
-            <span>
-              {uploadingParts[partType] ? "กำลังอัปโหลด..." : "เลือกรูป"}
-            </span>
-          </Button>
-        </label>
+        <div className="flex-1 flex flex-col gap-2">
+          <label className="block">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleImagePartUpload(e, partType)}
+              disabled={uploadingParts[partType]}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full cursor-pointer"
+              disabled={uploadingParts[partType]}
+              asChild
+            >
+              <span>
+                {uploadingParts[partType] ? "กำลังอัปโหลด..." : "เลือกรูป"}
+              </span>
+            </Button>
+          </label>
+          {formData.images?.[partType] && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={() => handleDeletePartImage(partType)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -691,26 +766,38 @@ const EditPlantModal = ({
             </div>
             <div className="flex-1 space-y-2">
               <Label>รูปภาพหลัก</Label>
-              <label className="block">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleMainImageUpload}
-                  disabled={uploadingMain}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full cursor-pointer"
-                  disabled={uploadingMain}
-                  asChild
-                >
-                  <span>
-                    {uploadingMain ? "กำลังอัปโหลด..." : "เลือกรูป"}
-                  </span>
-                </Button>
-              </label>
+              <div className="flex gap-2">
+                <label className="flex-1 block">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleMainImageUpload}
+                    disabled={uploadingMain}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full cursor-pointer"
+                    disabled={uploadingMain}
+                    asChild
+                  >
+                    <span>
+                      {uploadingMain ? "กำลังอัปโหลด..." : "เลือกรูป"}
+                    </span>
+                  </Button>
+                </label>
+                {formData.image && typeof formData.image === "string" && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteMainImage}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -869,8 +956,8 @@ const EditPlantModal = ({
           <div className="space-y-2">
             <Label>อ้างอิง</Label>
             <Textarea
-              className="resize-none h-16"
-              placeholder="แหล่งอ้างอิง หรือ URL ที่ปลูกจากมา"
+              className="resize-none h-20"
+              placeholder="แหล่งที่มาข้อมูล และแหล่งที่มาของภาพ (สามารถระบุ URL หรือชื่อแหล่งที่มา)"
               value={formData.reference || ""}
               onChange={(e) => handleChange("reference", e.target.value)}
             />
@@ -1073,6 +1160,69 @@ const AddPlantModal = ({
     }
   };
 
+  const handleDeleteMainImage = async () => {
+    if (!formData.image || typeof formData.image !== 'string') return;
+    
+    try {
+      const oldUrl = formData.image;
+      const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+      if (pathMatch) {
+        const oldPath = decodeURIComponent(pathMatch[1]);
+        await deleteImage(oldPath);
+      }
+      setFormData((prev) => ({
+        ...prev,
+        image: "",
+      }));
+      setMainPreview("");
+      toast.success("ลบรูปหลักสำเร็จ", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } catch (error) {
+      console.error("Error deleting main image:", error);
+      toast.error("เกิดข้อผิดพลาดในการลบรูป", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    }
+  };
+
+  const handleDeletePartImage = async (partType: 'flower' | 'leaf' | 'fruit' | 'bark') => {
+    if (!formData.images?.[partType]) return;
+    
+    try {
+      const oldUrl = formData.images[partType];
+      const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+      if (pathMatch) {
+        const oldPath = decodeURIComponent(pathMatch[1]);
+        await deleteImage(oldPath);
+      }
+      setFormData((prev) => ({
+        ...prev,
+        images: {
+          ...(prev.images || {}),
+          [partType]: "",
+        },
+      }));
+      setPartPreview((prev) => {
+        const newPreview = { ...prev };
+        delete newPreview[partType];
+        return newPreview;
+      });
+      toast.success("ลบรูปสำเร็จ", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    } catch (error) {
+      console.error(`Error deleting ${partType} image:`, error);
+      toast.error("เกิดข้อผิดพลาดในการลบรูป", {
+        position: "bottom-right",
+        style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+      });
+    }
+  };
+
   const PartImageUploader = ({ partType, label }: { partType: 'flower' | 'leaf' | 'fruit' | 'bark'; label: string }) => (
     <div className="space-y-2">
       <Label>{label}</Label>
@@ -1094,26 +1244,38 @@ const AddPlantModal = ({
             <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
           )}
         </div>
-        <label className="flex-1">
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => handleImagePartUpload(e, partType)}
-            disabled={uploadingParts[partType]}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full cursor-pointer"
-            disabled={uploadingParts[partType]}
-            asChild
-          >
-            <span>
-              {uploadingParts[partType] ? "กำลังอัปโหลด..." : "เลือกรูป"}
-            </span>
-          </Button>
-        </label>
+        <div className="flex-1 flex gap-2 items-end">
+          <label className="flex-1 block">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleImagePartUpload(e, partType)}
+              disabled={uploadingParts[partType]}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full cursor-pointer"
+              disabled={uploadingParts[partType]}
+              asChild
+            >
+              <span>
+                {uploadingParts[partType] ? "กำลังอัปโหลด..." : "เลือกรูป"}
+              </span>
+            </Button>
+          </label>
+          {formData.images?.[partType] && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={() => handleDeletePartImage(partType)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1208,26 +1370,38 @@ const AddPlantModal = ({
             </div>
             <div className="flex-1 space-y-2">
               <Label>รูปภาพหลัก</Label>
-              <label className="block">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleMainImageUpload}
-                  disabled={uploadingMain}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full cursor-pointer"
-                  disabled={uploadingMain}
-                  asChild
-                >
-                  <span>
-                    {uploadingMain ? "กำลังอัปโหลด..." : "เลือกรูป"}
-                  </span>
-                </Button>
-              </label>
+              <div className="flex gap-2">
+                <label className="flex-1 block">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleMainImageUpload}
+                    disabled={uploadingMain}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full cursor-pointer"
+                    disabled={uploadingMain}
+                    asChild
+                  >
+                    <span>
+                      {uploadingMain ? "กำลังอัปโหลด..." : "เลือกรูป"}
+                    </span>
+                  </Button>
+                </label>
+                {formData.image && typeof formData.image === "string" && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteMainImage}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1386,8 +1560,8 @@ const AddPlantModal = ({
           <div className="space-y-2">
             <Label>อ้างอิง</Label>
             <Textarea
-              className="resize-none h-16"
-              placeholder="แหล่งอ้างอิง หรือ URL ที่ปลูกจากมา"
+              className="resize-none h-20"
+              placeholder="แหล่งที่มาข้อมูล และแหล่งที่มาของภาพ (สามารถระบุ URL หรือชื่อแหล่งที่มา)"
               value={formData.reference || ""}
               onChange={(e) => handleChange("reference", e.target.value)}
             />

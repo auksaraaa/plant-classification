@@ -83,7 +83,7 @@ const PlantDetail = () => {
 
   return (
     <div className="container max-w-full px-3 sm:px-4 py-6 sm:py-8 animate-fade-in">
-      <Link to="/" className="inline-flex items-center gap-2 text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors mb-4 sm:mb-6">
+      <Link to="/" className="inline-flex items-center gap-2 text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors mb-4 sm:mb-6">
         <ArrowLeft className="h-4 w-4" /> กลับหน้าแรก
       </Link>
 
@@ -118,7 +118,7 @@ const PlantDetail = () => {
 
           {plant.images && Object.values(plant.images).some(img => img) && (
             <>
-              <h2 className="text-lg sm:text-xl font-semibold text-foreground">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 {(Object.keys(partLabels) as Array<'leaf' | 'flower' | 'fruit' | 'bark'>).map((partType) => {
                   const imageUrl = plant.images?.[partType];
@@ -146,11 +146,11 @@ const PlantDetail = () => {
                         ) : (
                           <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                             <ImageOff className="h-6 w-6 sm:h-8 sm:w-8" />
-                            <span className="text-xs sm:text-sm">{partLabels[partType]}</span>
+                            <span className="text-sm sm:text-base">{partLabels[partType]}</span>
                           </div>
                         )}
                       </div>
-                      <p className="text-xs sm:text-sm font-medium text-foreground p-2 text-center">{partLabels[partType]}</p>
+                      <p className="text-sm sm:text-base font-medium text-foreground p-2 text-center">{partLabels[partType]}</p>
                     </div>
                   );
                 })}
@@ -160,16 +160,16 @@ const PlantDetail = () => {
         </div>
 
         <div>
-          <span className="text-xs sm:text-sm font-medium text-primary bg-accent px-2 sm:px-3 py-1 rounded-full inline-block">
+          <span className="text-sm sm:text-base font-medium text-primary bg-accent px-2 sm:px-3 py-1 rounded-full inline-block">
             {plant.category || 'ไม่ระบุ'}
           </span>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mt-3 sm:mt-4">{plant.name}</h1>
-          <p className="text-muted-foreground text-sm sm:text-base mt-1 sm:mt-2"><ScientificName name={plant.scientificName} /></p>
-          <p className="mt-4 sm:mt-6 text-sm sm:text-base text-foreground leading-relaxed">{plant.description}</p>
+          <p className="text-muted-foreground text-lg sm:text-xl mt-1 sm:mt-2"><ScientificName name={plant.scientificName} /></p>
+          <p className="mt-4 sm:mt-6 text-base sm:text-lg text-foreground leading-relaxed">{plant.description}</p>
 
           {plant.characteristics && Object.keys(plant.characteristics).length > 0 && (
             <>
-              <h2 className="text-lg sm:text-xl font-semibold text-foreground mt-6 sm:mt-8 mb-3 sm:mb-4">ลักษณะทั่วไป</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mt-6 sm:mt-8 mb-3 sm:mb-4">ลักษณะทั่วไป</h2>
               <div className="space-y-2 sm:space-y-3">
                 {(Object.keys(plant.characteristics) as Array<keyof typeof plant.characteristics>).map((key) => {
                   const Icon = icons[key];
@@ -179,8 +179,8 @@ const PlantDetail = () => {
                     <div key={key} className="flex items-start gap-3 p-3 sm:p-4 rounded-lg bg-secondary/60">
                       {Icon && <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 shrink-0" />}
                       <div>
-                        <span className="text-xs sm:text-sm font-medium text-foreground">{labels[key]}</span>
-                        <p className="text-xs sm:text-sm text-muted-foreground">{value}</p>
+                        <span className="text-sm sm:text-base font-medium text-foreground">{labels[key]}</span>
+                        <p className="text-sm sm:text-base text-muted-foreground">{value}</p>
                       </div>
                     </div>
                   );
@@ -191,14 +191,14 @@ const PlantDetail = () => {
 
           {(plant.ecology || plant.benefits || plant.iucnStatus) && (
             <>
-              <h2 className="text-lg sm:text-xl font-semibold text-foreground mt-6 sm:mt-8 mb-3 sm:mb-4">ข้อมูลเพิ่มเติม</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mt-6 sm:mt-8 mb-3 sm:mb-4">ข้อมูลเพิ่มเติม</h2>
               <div className="space-y-2 sm:space-y-3">
                 {plant.ecology && (
                   <div className="flex items-start gap-3 p-3 sm:p-4 rounded-lg bg-secondary/60">
                     <Sprout className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 shrink-0" />
                     <div>
-                      <span className="text-xs sm:text-sm font-medium text-foreground">นิเวศวิทยาและการกระจายพันธุ์</span>
-                      <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap">{plant.ecology}</p>
+                      <span className="text-sm sm:text-base font-medium text-foreground">นิเวศวิทยาและการกระจายพันธุ์</span>
+                      <p className="text-sm sm:text-base text-muted-foreground whitespace-pre-wrap">{plant.ecology}</p>
                     </div>
                   </div>
                 )}
@@ -206,8 +206,8 @@ const PlantDetail = () => {
                   <div className="flex items-start gap-3 p-3 sm:p-4 rounded-lg bg-secondary/60">
                     <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 shrink-0" />
                     <div>
-                      <span className="text-xs sm:text-sm font-medium text-foreground">ประโยชน์/โทษ</span>
-                      <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap">{plant.benefits}</p>
+                      <span className="text-sm sm:text-base font-medium text-foreground">ประโยชน์/โทษ</span>
+                      <p className="text-sm sm:text-base text-muted-foreground whitespace-pre-wrap">{plant.benefits}</p>
                     </div>
                   </div>
                 )}
@@ -215,8 +215,8 @@ const PlantDetail = () => {
                   <div className="flex items-start gap-3 p-3 sm:p-4 rounded-lg bg-secondary/60">
                     <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 shrink-0" />
                     <div>
-                      <span className="text-xs sm:text-sm font-medium text-foreground">สถานะการอนุรักษ์ IUCN Red List 2022</span>
-                      <p className="text-xs sm:text-sm text-muted-foreground">{iucnStatusMap[plant.iucnStatus] || plant.iucnStatus}</p>
+                      <span className="text-sm sm:text-base font-medium text-foreground">สถานะการอนุรักษ์ IUCN Red List 2022</span>
+                      <p className="text-sm sm:text-base text-muted-foreground">{iucnStatusMap[plant.iucnStatus] || plant.iucnStatus}</p>
                     </div>
                   </div>
                 )}
@@ -225,9 +225,10 @@ const PlantDetail = () => {
           )}
 
           {plant.reference && (
-            <p className="mt-6 sm:mt-8 text-xs sm:text-sm text-muted-foreground italic">
-              <span className="font-semibold">อ้างอิง:</span> {plant.reference}
-            </p>
+            <div className="mt-6 sm:mt-8 text-sm sm:text-base text-muted-foreground italic">
+              <span className="font-semibold">อ้างอิง:</span>
+              <p className="whitespace-pre-wrap mt-1">{plant.reference}</p>
+            </div>
           )}
         </div>
       </div>
@@ -251,7 +252,7 @@ const PlantDetail = () => {
                   alt={selectedImage.label}
                   className="max-w-full max-h-[70vh] object-contain"
                 />
-                <p className="text-white text-center mt-4 text-sm sm:text-base">{selectedImage.label}</p>
+                <p className="text-white text-center mt-4 text-base sm:text-lg">{selectedImage.label}</p>
               </div>
             )}
           </div>
