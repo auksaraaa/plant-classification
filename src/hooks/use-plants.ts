@@ -46,6 +46,7 @@ export function usePlants() {
   const addPlant = async (plant: Plant) => {
     try {
       // Prepare data - filter out undefined values from images
+      const now = Date.now();
       const plantData: any = {
         id: plant.id,
         name: plant.name,
@@ -55,6 +56,8 @@ export function usePlants() {
         image: plant.image,
         category: plant.category,
         characteristics: plant.characteristics,
+        createdAt: now,
+        updatedAt: now,
       };
 
       // Add reference if provided
@@ -125,6 +128,7 @@ export function usePlants() {
         image: updatedPlant.image,
         category: updatedPlant.category,
         characteristics: updatedPlant.characteristics,
+        updatedAt: Date.now(),
       };
 
       // Add reference if provided

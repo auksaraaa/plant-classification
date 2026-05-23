@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Leaf, Flower2, Cherry, Ruler, Layers, Sprout, Shield, AlertCircle, ImageOff, X } from "lucide-react";
 import { usePlant } from "@/hooks/use-plants";
@@ -34,6 +33,18 @@ const partLabels: Record<'leaf' | 'flower' | 'fruit' | 'bark', string> = {
   flower: "ดอก",
   fruit: "ผล",
   bark: "เปลือก",
+};
+
+const iucnStatusMap: Record<string, string> = {
+  "Extinct": "สูญพันธุ์ (Extinct - EX)",
+  "Extinct in the Wild": "สูญพันธุ์ในถิ่นกำเนิด (Extinct in the Wild - EW)",
+  "Critically Endangered": "วิกฤตอย่างยิ่ง (Critically Endangered - CR)",
+  "Endangered": "วิกฤต (Endangered - EN)",
+  "Vulnerable": "เสี่ยงวิกฤต (Vulnerable - VU)",
+  "Near Threatened": "ใกล้เสี่ยงวิกฤต (Near Threatened - NT)",
+  "Least Concern": "ไม่เสี่ยง (Least Concern - LC)",
+  "Data Deficient": "ข้อมูลไม่พอ (Data Deficient - DD)",
+  "Not Evaluated": "ยังไม่ได้ประเมิน (Not Evaluated - NE)",
 };
 
 const PlantDetail = () => {
@@ -205,7 +216,7 @@ const PlantDetail = () => {
                     <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 shrink-0" />
                     <div>
                       <span className="text-xs sm:text-sm font-medium text-foreground">สถานะการอนุรักษ์ IUCN Red List 2022</span>
-                      <p className="text-xs sm:text-sm text-muted-foreground">{plant.iucnStatus}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{iucnStatusMap[plant.iucnStatus] || plant.iucnStatus}</p>
                     </div>
                   </div>
                 )}

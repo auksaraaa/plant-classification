@@ -88,47 +88,79 @@ const sidebarItems: { key: Tab; label: string; icon: LucideIcon }[] = [
   { key: "settings", label: "ตั้งค่าระบบ", icon: Settings },
 ];
 
-const AdminSidebar = ({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) => (
-  <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-    <div className="flex items-center gap-3 px-6 py-6 border-b border-sidebar-border">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary shadow-glow">
-        <Leaf className="h-5 w-5 text-primary-foreground" />
+const AdminSidebar = ({ active, onChange, isOpen, onClose }: { active: Tab; onChange: (t: Tab) => void; isOpen?: boolean; onClose?: () => void }) => {
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-3 px-6 py-6 border-b border-sidebar-border">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary shadow-glow">
+          <Leaf className="h-5 w-5 text-primary-foreground" />
+        </div>
+        <div>
+          <h1 className="font-display text-lg font-bold leading-tight">PlantAdmin</h1>
+          <p className="text-xs text-sidebar-foreground/60">Botanical Console</p>
+        </div>
       </div>
-      <div>
-        <h1 className="font-display text-lg font-bold leading-tight">PlantAdmin</h1>
-        <p className="text-xs text-sidebar-foreground/60">Botanical Console</p>
-      </div>
-    </div>
 
-    <nav className="flex-1 px-3 py-6 space-y-1">
-      <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-        เมนูหลัก
-      </p>
-      {sidebarItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = active === item.key;
-        return (
-          <button
-            key={item.key}
-            onClick={() => onChange(item.key)}
-            className={cn(
-              "group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-              isActive
-                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-                : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            <span>{item.label}</span>
-            {isActive && (
-              <span className="absolute right-3 h-1.5 w-1.5 rounded-full bg-sidebar-primary-foreground" />
-            )}
-          </button>
-        );
-      })}
-    </nav>
-  </aside>
-);
+      <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+          เมนูหลัก
+        </p>
+        {sidebarItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = active === item.key;
+          return (
+            <button
+              key={item.key}
+              onClick={() => {
+                onChange(item.key);
+                if (onClose) onClose();
+              }}
+              className={cn(
+                "group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                isActive
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{item.label}</span>
+              {isActive && (
+                <span className="absolute right-3 h-1.5 w-1.5 rounded-full bg-sidebar-primary-foreground" />
+              )}
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile Sidebar Drawer */}
+      {typeof window !== 'undefined' && (
+        <div className={cn(
+          "fixed inset-0 z-40 lg:hidden",
+          isOpen ? "block" : "hidden"
+        )}>
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50" 
+            onClick={onClose}
+          />
+          {/* Drawer */}
+          <aside className="absolute left-0 top-0 bottom-0 w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lg">
+            <SidebarContent />
+          </aside>
+        </div>
+      )}
+    </>
+  );
+};
 
 /* ========================= HEADER ========================= */
 const AdminHeader = ({
@@ -234,44 +266,94 @@ const StatCard = ({
 );
 
 /* ========================= TOP PLANTS CARD ========================= */
-const TopPlantsCard = ({ plants }: { plants: { name: string; count: number }[] }) => {
-  const max = Math.max(...plants.map((p) => p.count));
+const TopPlantsCard = ({ plants }: { plants: Plant[] }) => {
+  const topPlants = plants
+    .filter((p) => p.updatedAt)
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+    .slice(0, 5);
+
   return (
     <Card className="border-border/60 shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 font-display text-lg">
             <TrendingUp className="h-5 w-5 text-primary" />
-            Top 5 พรรณไม้ยอดนิยม
+            Top 5 พรรณไม้อัปเดตล่าสุด
           </CardTitle>
-          <span className="text-xs text-muted-foreground">7 วันล่าสุด</span>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {plants.map((plant, idx) => {
-          const pct = (plant.count / max) * 100;
-          return (
-            <div key={plant.name} className="space-y-1.5 animate-fade-up" style={{ animationDelay: `${idx * 60}ms` }}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-primary text-xs font-bold text-primary-foreground shadow-sm">
-                    {idx + 1}
-                  </span>
-                  <span className="font-medium text-sm truncate">{plant.name}</span>
+      <CardContent>
+        {/* Desktop Table View */}
+        <div className="hidden sm:block overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>ชื่อ</TableHead>
+                <TableHead>หมวดหมู่</TableHead>
+                <TableHead>วันที่อัปเดต</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {topPlants.length > 0 ? (
+                topPlants.map((plant, idx) => (
+                  <TableRow key={plant.id} className="animate-fade-up" style={{ animationDelay: `${idx * 60}ms` }}>
+                    <TableCell className="font-medium">{plant.name}</TableCell>
+                    <TableCell>{plant.category || "ไม่ระบุ"}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {plant.updatedAt ? new Date(plant.updatedAt).toLocaleDateString("th-TH", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      }) : "-"}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                    ยังไม่มีข้อมูลพรรณไม้
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="sm:hidden space-y-3">
+          {topPlants.length > 0 ? (
+            topPlants.map((plant, idx) => (
+              <div
+                key={plant.id}
+                className="p-3 border border-border/60 rounded-lg bg-muted/30 animate-fade-up"
+                style={{ animationDelay: `${idx * 60}ms` }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground">
+                        {idx + 1}
+                      </span>
+                      <p className="font-medium truncate text-sm">{plant.name}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{plant.category || "ไม่ระบุ"}</p>
+                  </div>
                 </div>
-                <span className="text-sm font-semibold tabular-nums text-muted-foreground">
-                  {plant.count.toLocaleString()}
-                </span>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {plant.updatedAt ? new Date(plant.updatedAt).toLocaleDateString("th-TH", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  }) : "-"}
+                </p>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-gradient-primary transition-all"
-                  style={{ width: `${pct}%`, animation: `slideIn 0.8s ease-out ${idx * 80}ms both` }}
-                />
-              </div>
+            ))
+          ) : (
+            <div className="text-center text-muted-foreground py-8 text-sm">
+              ยังไม่มีข้อมูลพรรณไม้
             </div>
-          );
-        })}
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -1336,6 +1418,7 @@ const Admin = () => {
   const { plants, removePlant, updatePlant, addPlant } = usePlants();
   const { categories: categoryList, addCategory, deleteCategory, updateCategory } = useCategories();
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
   const [editingPlant, setEditingPlant] = useState<Plant | null>(null);
@@ -1389,20 +1472,6 @@ const Admin = () => {
   if (!isAuthenticated) {
     return null;
   }
-
-  const stats = {
-    todayClassifications: 24,
-    totalClassifications: 1542,
-    usersToday: 12,
-    totalUsers: 256,
-    topPlants: [
-      { name: "ตะกู", count: 245 },
-      { name: "ลาเวนเดอร์", count: 187 },
-      { name: "ว่านหางจระเข้", count: 156 },
-      { name: "ลิลี่สงบ", count: 142 },
-      { name: "ยาง", count: 128 },
-    ],
-  };
 
   // Category management handlers
   const handleAddCategory = async () => {
@@ -1501,12 +1570,13 @@ const Admin = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-surface">
-      <AdminSidebar active={activeTab} onChange={setActiveTab} />
+      <AdminSidebar active={activeTab} onChange={setActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0">
         <AdminHeader
           title={titleMap[activeTab].title}
           subtitle={titleMap[activeTab].subtitle}
+          onMenuClick={() => setIsSidebarOpen(true)}
           onLogout={handleLogout}
         />
 
@@ -1514,11 +1584,31 @@ const Admin = () => {
           {activeTab === "dashboard" && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <StatCard label="จำแนกวันนี้" value={stats.todayClassifications} hint="รูปภาพที่ส่งเข้ามา" icon={ImageIcon} tone="primary" trend={{ value: 12, positive: true }} />
-                <StatCard label="จำแนกทั้งหมด" value={stats.totalClassifications.toLocaleString()} hint="ตั้งแต่เริ่มใช้งาน" icon={Target} tone="info" trend={{ value: 8, positive: true }} />
+                <StatCard 
+                  label="วันที่อัปเดตล่าสุด" 
+                  value={
+                    plants.length > 0 && plants.some(p => p.updatedAt)
+                      ? new Date(Math.max(...plants.filter(p => p.updatedAt).map(p => p.updatedAt || 0))).toLocaleDateString("th-TH", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : "ไม่มีข้อมูล"
+                  } 
+                  hint="ของข้อมูลพรรณไม้" 
+                  icon={ImageIcon} 
+                  tone="primary" 
+                />
+                <StatCard 
+                  label="จำนวนหมวดหมู่" 
+                  value={(categoryList && categoryList.length > 0 ? categoryList.length : 0)} 
+                  hint="ในระบบทั้งหมด" 
+                  icon={Target} 
+                  tone="info" 
+                />
                 <StatCard label="พรรณไม้" value={plants.length} hint="ในระบบทั้งหมด" icon={Leaf} tone="accent" />
               </div>
-              <TopPlantsCard plants={stats.topPlants} />
+              <TopPlantsCard plants={plants} />
             </>
           )}
 
@@ -1578,96 +1668,181 @@ const Admin = () => {
                       <p>ไม่พบผลการค้นหา</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="hover:bg-transparent border-border bg-muted/50">
-                            <TableHead className="pl-6 font-bold text-foreground">ชื่อพรรณไม้</TableHead>
-                            <TableHead className="font-bold text-foreground">ชื่อวิทยาศาสตร์</TableHead>
-                            <TableHead className="text-center font-bold text-foreground">หมวดหมู่</TableHead>
-                            <TableHead className="text-right pr-6 font-bold text-foreground">จัดการ</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredPlants.map((plant) => (
-                            <TableRow key={plant.id} className="border-border">
-                              <TableCell className="pl-6 font-medium">
-                                {plant.name}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                <ScientificName name={plant.scientificName} />
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Badge variant="outline" className="font-normal w-[68px] justify-center mx-auto">
-                                  {plant.category}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right pr-6">
-                                <div className="inline-flex gap-1">
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 hover:text-primary"
-                                    onClick={() => setEditingPlant(plant)}
-                                  >
-                                    <Edit className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-8 w-8 hover:text-destructive"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>ยืนยันการลบข้อมูล</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          คุณต้องการลบข้อมูล "{plant.name}" ใช่หรือไม่?
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={async () => {
-                                            try {
-                                              await removePlant(plant.id);
-                                              toast.success(`ลบ ${plant.name} แล้ว`, {
-                                                position: "bottom-right",
-                                                style: {
-                                                  background: "#FAE251",
-                                                  color: "#000",
-                                                  borderColor: "#F0D642",
-                                                },
-                                              });
-                                            } catch (error) {
-                                              toast.error(`เกิดข้อผิดพลาดในการลบ ${plant.name}`, {
-                                                position: "bottom-right",
-                                                style: {
-                                                  background: "#FAE251",
-                                                  color: "#000",
-                                                  borderColor: "#F0D642",
-                                                },
-                                              });
-                                            }
-                                          }}
-                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                        >
-                                          ยืนยัน
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </div>
-                              </TableCell>
+                    <>
+                      {/* Desktop Table View */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="hover:bg-transparent border-border bg-muted/50">
+                              <TableHead className="pl-6 font-bold text-foreground">ชื่อพรรณไม้</TableHead>
+                              <TableHead className="font-bold text-foreground">ชื่อวิทยาศาสตร์</TableHead>
+                              <TableHead className="text-center font-bold text-foreground">หมวดหมู่</TableHead>
+                              <TableHead className="text-right pr-6 font-bold text-foreground">จัดการ</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredPlants.map((plant) => (
+                              <TableRow key={plant.id} className="border-border">
+                                <TableCell className="pl-6 font-medium">
+                                  {plant.name}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  <ScientificName name={plant.scientificName} />
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Badge variant="outline" className="font-normal justify-center">
+                                    {plant.category}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right pr-6">
+                                  <div className="inline-flex gap-1">
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8 hover:text-primary"
+                                      onClick={() => setEditingPlant(plant)}
+                                    >
+                                      <Edit className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-8 w-8 hover:text-destructive"
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>ยืนยันการลบข้อมูล</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            คุณต้องการลบข้อมูล "{plant.name}" ใช่หรือไม่?
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={async () => {
+                                              try {
+                                                await removePlant(plant.id);
+                                                toast.success(`ลบ ${plant.name} แล้ว`, {
+                                                  position: "bottom-right",
+                                                  style: {
+                                                    background: "#FAE251",
+                                                    color: "#000",
+                                                    borderColor: "#F0D642",
+                                                  },
+                                                });
+                                              } catch (error) {
+                                                toast.error(`เกิดข้อผิดพลาดในการลบ ${plant.name}`, {
+                                                  position: "bottom-right",
+                                                  style: {
+                                                    background: "#FAE251",
+                                                    color: "#000",
+                                                    borderColor: "#F0D642",
+                                                  },
+                                                });
+                                              }
+                                            }}
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                          >
+                                            ยืนยัน
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Mobile Card View */}
+                      <div className="md:hidden space-y-3 p-4">
+                        {filteredPlants.map((plant) => (
+                          <div
+                            key={plant.id}
+                            className="p-4 border border-border/60 rounded-lg bg-muted/30 space-y-2"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate text-sm">{plant.name}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  <ScientificName name={plant.scientificName} />
+                                </p>
+                              </div>
+                              <Badge variant="outline" className="font-normal shrink-0">
+                                {plant.category}
+                              </Badge>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => setEditingPlant(plant)}
+                              >
+                                <Edit className="h-3.5 w-3.5 mr-1" />
+                                แก้ไข
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                    ลบ
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>ยืนยันการลบข้อมูล</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      คุณต้องการลบข้อมูล "{plant.name}" ใช่หรือไม่?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={async () => {
+                                        try {
+                                          await removePlant(plant.id);
+                                          toast.success(`ลบ ${plant.name} แล้ว`, {
+                                            position: "bottom-right",
+                                            style: {
+                                              background: "#FAE251",
+                                              color: "#000",
+                                              borderColor: "#F0D642",
+                                            },
+                                          });
+                                        } catch (error) {
+                                          toast.error(`เกิดข้อผิดพลาดในการลบ ${plant.name}`, {
+                                            position: "bottom-right",
+                                            style: {
+                                              background: "#FAE251",
+                                              color: "#000",
+                                              borderColor: "#F0D642",
+                                            },
+                                          });
+                                        }
+                                      }}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      ยืนยัน
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>

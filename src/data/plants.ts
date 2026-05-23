@@ -10,6 +10,8 @@ export interface Plant {
   ecology?: string;
   benefits?: string;
   iucnStatus?: string;
+  createdAt?: number;
+  updatedAt?: number;
   images?: {
     flower?: string;
     leaf?: string;
