@@ -25,6 +25,16 @@ const Index = () => {
     });
   }, [search, category, plants]);
 
+  // Show loading animation while fetching plants data
+  if (plantsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen flex-col gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <p className="text-muted-foreground">กำลังโหลดข้อมูลพรรณไม้...</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Hero */}
@@ -33,10 +43,10 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-3 sm:px-4">
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-2 sm:mb-3 animate-fade-in leading-tight">
-            ค้นหาพรรณไม้ที่คุณชื่นชอบ
+            ค้นหาพรรณไม้ที่คุณสนใจ
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-muted-foreground max-w-sm sm:max-w-md md:max-w-lg mb-4 sm:mb-6 animate-fade-in line-clamp-2 sm:line-clamp-none" style={{ animationDelay: "0.1s" }}>
-            สำรวจข้อมูลพรรณไม้หลากหลายชนิด พร้อมรายละเอียดการดูแลรักษา
+          รวบรวมข้อมูลพรรณไม้ภายในมหาวิทยาลัยเกษตรศาสตร์ วิทยาเขตศรีราชา
           </p>
           {/* Search */}
           <div className="relative w-full max-w-2xl px-2 sm:px-0 animate-fade-in" style={{ animationDelay: "0.2s" }}>

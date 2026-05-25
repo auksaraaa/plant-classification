@@ -24,7 +24,7 @@ const Logo = ({ size = "md", showText = true }: LogoProps) => {
       {showText && (
         <div className="flex flex-col">
           <span className={`${text} font-bold text-white`}>Plantify KU SRC.</span>
-          <span className="text-xs text-white/70 -mt-1">ฐานข้อมูลพรรณไม้เพื่อการเรียนรู้ มหาวิทยาลัยเกษตรศาสตร์ วิทยาเขตศรีราชา</span>
+          <span className="text-sm text-white/70 -mt-1">ฐานข้อมูลพรรณไม้เพื่อการเรียนรู้ มหาวิทยาลัยเกษตรศาสตร์ วิทยาเขตศรีราชา</span>
         </div>
       )}
     </div>

@@ -117,8 +117,8 @@ const PlantDetail = () => {
           </div>
 
           {plant.images && Object.values(plant.images).some(img => img) && (
-            <>
-              <h2 className="text-xl sm:text-2xl font-semibold text-foreground">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</h2>
+            <div>
+              <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 {(Object.keys(partLabels) as Array<'leaf' | 'flower' | 'fruit' | 'bark'>).map((partType) => {
                   const imageUrl = plant.images?.[partType];
@@ -155,7 +155,7 @@ const PlantDetail = () => {
                   );
                 })}
               </div>
-            </>
+            </div>
           )}
         </div>
 
@@ -254,7 +254,7 @@ const PlantDetail = () => {
                 />
                 <p className="text-white text-center mt-4 text-base sm:text-lg">{selectedImage.label}</p>
               </div>
-            )}
+            )}  
           </div>
         </DialogContent>
       </Dialog>

@@ -1,4 +1,4 @@
-import { Search, Camera, BarChart3, BookOpen, Loader } from "lucide-react";
+import { Search, FolderTree, BookOpen } from "lucide-react";
 
 const steps = [
   {
@@ -7,19 +7,14 @@ const steps = [
     desc: "พิมพ์ชื่อพรรณไม้เพื่อค้นหาข้อมูลได้ทันที"
   },
   {
-    icon: Camera,
-    step: "อัปโหลดรูปภาพ",
-    desc: "ถ่ายหรืออัปโหลดภาพพืช เพื่อให้ระบบช่วยจำแนก"
-  },
-  {
-    icon: BarChart3,
-    step: "ดูผลลัพธ์",
-    desc: "แสดงชื่อพืช พร้อมค่าความแม่นยำและตัวเลือกใกล้เคียง"
+    icon: FolderTree,
+    step: "เลือกหมวดหมู่พรรณไม้",
+    desc: "เลือกประเภทพรรณไม้ที่สนใจ เช่น ไม้ยืนต้น ไม้ดอก หรือสมุนไพร เพื่อดูข้อมูลเฉพาะหมวดหมู่"
   },
   {
     icon: BookOpen,
-    step: "ศึกษาข้อมูลเพิ่มเติม",
-    desc: "ดูรายละเอียด เช่น ลักษณะ การดูแล และประโยชน์"
+    step: "ดูรายละเอียดพรรณไม้",
+    desc: "กดเลือกพรรณไม้ที่ต้องการ เพื่อดูรายละเอียด เช่น ลักษณะทั่วไป ประโยชน์ และรูปภาพประกอบ"
   }
 ];
 
@@ -28,7 +23,7 @@ const HowToUse = () => {
   <div className="container max-w-full md:max-w-3xl px-3 sm:px-4 py-8 sm:py-12">
     <h1 className="text-2xl sm:text-3xl font-bold text-foreground text-center mb-2 sm:mb-3 animate-fade-in">วิธีใช้งาน</h1>
     <p className="text-center text-xs sm:text-base text-muted-foreground mb-8 sm:mb-12 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-      เริ่มต้นใช้งานง่ายๆ เพียง 4 ขั้นตอน
+      เริ่มต้นใช้งานง่ายๆ เพียง 3 ขั้นตอน
     </p>
 
     <div className="space-y-4 sm:space-y-6">
