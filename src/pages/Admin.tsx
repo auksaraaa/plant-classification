@@ -78,14 +78,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 /* ========================= TYPES ========================= */
-type Tab = "dashboard" | "plants" | "statistics" | "settings";
+type Tab = "dashboard" | "plants" | "statistics";
 
 /* ========================= SIDEBAR ========================= */
 const sidebarItems: { key: Tab; label: string; icon: LucideIcon }[] = [
   { key: "dashboard", label: "ภาพรวมระบบ", icon: LayoutDashboard },
   { key: "plants", label: "จัดการพรรณไม้", icon: Leaf },
   { key: "statistics", label: "จัดการหมวดหมู่", icon: Grid3x3 },
-  { key: "settings", label: "ตั้งค่าระบบ", icon: Settings },
 ];
 
 const AdminSidebar = ({ active, onChange, isOpen, onClose }: { active: Tab; onChange: (t: Tab) => void; isOpen?: boolean; onClose?: () => void }) => {
@@ -362,7 +361,6 @@ const mobileItems: { key: Tab; label: string; icon: LucideIcon }[] = [
   { key: "dashboard", label: "หน้าหลัก", icon: LayoutDashboard },
   { key: "plants", label: "พืช", icon: Leaf },
   { key: "statistics", label: "หมวดหมู่", icon: Grid3x3 },
-  { key: "settings", label: "ตั้งค่า", icon: Settings },
 ];
 
 const MobileTabBar = ({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) => (
@@ -1737,7 +1735,6 @@ const Admin = () => {
     dashboard: { title: "ภาพรวมระบบ", subtitle: "ภาพรวมการใช้งานระบบจำแนกพรรณไม้" },
     plants: { title: "จัดการพรรณไม้", subtitle: "เพิ่ม แก้ไข และลบข้อมูลพรรณไม้ในระบบ" },
     statistics: { title: "จัดการหมวดหมู่", subtitle: "เพิ่ม แก้ไข และลบหมวดหมู่พรรณไม้" },
-    settings: { title: "ตั้งค่าระบบ", subtitle: "จัดการการตั้งค่าและความปลอดภัย" },
   };
 
   return (
@@ -2147,17 +2144,6 @@ const Admin = () => {
                 </CardContent>
               </Card>
             </>
-          )}
-
-          {activeTab === "settings" && (
-            <Card className="border-border/60 shadow-sm">
-              <CardHeader>
-                <CardTitle className="font-display text-lg">ตั้งค่าระบบ</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">
-                ส่วนนี้สามารถเชื่อมต่อกับ Lovable Cloud เพื่อจัดการสิทธิ์ผู้ใช้และการตั้งค่าได้ในอนาคต
-              </CardContent>
-            </Card>
           )}
         </main>
       </div>
