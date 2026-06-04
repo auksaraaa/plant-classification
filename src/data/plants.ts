@@ -29,4 +29,4 @@ export interface Plant {
 
 export const plants: Plant[] = [];
 
-export const categories = ["ทั้งหมด", "ไม้ดอก", "ไม้ใบ", "สมุนไพร", "ไม้ยืนต้น", "ไม้น้ำ"];
+export const categories = ["ไม้ดอก", "ไม้ใบ", "สมุนไพร", "ไม้ยืนต้น", "ไม้น้ำ"];

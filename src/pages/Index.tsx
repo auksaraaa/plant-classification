@@ -73,6 +73,16 @@ const Index = () => {
       {/* Categories */}
       <section className="container max-w-full px-3 sm:px-4 mt-6 sm:mt-8">
         <div className="flex flex-wrap gap-2 justify-center">
+          <button
+            onClick={() => setCategory("ทั้งหมด")}
+            className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+              category === "ทั้งหมด"
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-secondary-foreground hover:bg-accent"
+            }`}
+          >
+            ทั้งหมด
+          </button>
           {categories.map((cat) => (
             <button
               key={cat}

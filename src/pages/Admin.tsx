@@ -82,7 +82,7 @@ type Tab = "dashboard" | "plants" | "statistics" | "settings";
 
 /* ========================= SIDEBAR ========================= */
 const sidebarItems: { key: Tab; label: string; icon: LucideIcon }[] = [
-  { key: "dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
+  { key: "dashboard", label: "ภาพรวมระบบ", icon: LayoutDashboard },
   { key: "plants", label: "จัดการพรรณไม้", icon: Leaf },
   { key: "statistics", label: "จัดการหมวดหมู่", icon: Grid3x3 },
   { key: "settings", label: "ตั้งค่าระบบ", icon: Settings },
@@ -102,9 +102,11 @@ const AdminSidebar = ({ active, onChange, isOpen, onClose }: { active: Tab; onCh
       </div>
 
       <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
-        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-          เมนูหลัก
-        </p>
+        <div className="mb-3 border-b border-sidebar-border pb-3">
+          <p className="text-center text-[15px] font-bold tracking-wide text-sidebar-foreground/80">
+            ศูนย์จัดการข้อมูลพรรณไม้
+          </p>
+        </div>
         {sidebarItems.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.key;
@@ -137,14 +139,14 @@ const AdminSidebar = ({ active, onChange, isOpen, onClose }: { active: Tab; onCh
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
         <SidebarContent />
       </aside>
 
-      {/* Mobile Sidebar Drawer */}
+      {/* Sidebar Drawer */}
       {typeof window !== 'undefined' && (
         <div className={cn(
-          "fixed inset-0 z-40 lg:hidden",
+          "fixed inset-0 z-40",
           isOpen ? "block" : "hidden"
         )}>
           {/* Backdrop */}
@@ -177,7 +179,7 @@ const AdminHeader = ({
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="flex items-center gap-3 px-4 lg:px-8 py-4">
-        <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick}>
+        <Button variant="ghost" size="icon" onClick={onMenuClick}>
           <Menu className="h-5 w-5" />
         </Button>
 
@@ -191,15 +193,11 @@ const AdminHeader = ({
         </div>
 
         <div className="flex items-center gap-3 pl-3 border-l border-border">
-          <Avatar className="h-9 w-9 ring-2 ring-primary/20">
-            <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs font-bold">
-              AD
-            </AvatarFallback>
-          </Avatar>
           <div className="hidden sm:block">
             <p className="text-sm font-semibold leading-tight">ผู้ดูแล</p>
             <p className="text-xs text-muted-foreground">Administrator</p>
           </div>
+
           <Button
             variant="ghost"
             size="icon"
@@ -238,7 +236,7 @@ const StatCard = ({
   tone?: keyof typeof toneMap;
   trend?: { value: number; positive?: boolean };
 }) => (
-  <Card className="relative overflow-hidden border-border/60 bg-gradient-card p-5 shadow-sm hover:shadow-elegant transition-all duration-300 group animate-fade-up">
+  <Card className="relative overflow-hidden border-border/60 bg-gradient-card p-5 shadow-md hover:shadow-elegant transition-all duration-300 group animate-fade-up">
     <div className="relative flex items-start justify-between">
       <div className="space-y-1">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -273,7 +271,7 @@ const TopPlantsCard = ({ plants }: { plants: Plant[] }) => {
     .slice(0, 5);
 
   return (
-    <Card className="border-border/60 shadow-sm">
+    <Card className="border-border/60 shadow-md">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 font-display text-lg">
@@ -288,15 +286,15 @@ const TopPlantsCard = ({ plants }: { plants: Plant[] }) => {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead>ชื่อ</TableHead>
-                <TableHead>หมวดหมู่</TableHead>
-                <TableHead>วันที่อัปเดต</TableHead>
+                <TableHead className="font-bold text-primary">ชื่อ</TableHead>
+                <TableHead className="font-bold text-primary">หมวดหมู่</TableHead>
+                <TableHead className="font-bold text-primary">วันที่อัปเดต</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {topPlants.length > 0 ? (
                 topPlants.map((plant, idx) => (
-                  <TableRow key={plant.id} className="animate-fade-up" style={{ animationDelay: `${idx * 60}ms` }}>
+                  <TableRow key={plant.id} className="animate-fade-up" style={{ animationDelay: `${idx * 60}ms`, backgroundColor: idx % 2 === 0 ? "#F5F7F8" : "transparent" }}>
                     <TableCell className="font-medium">{plant.name}</TableCell>
                     <TableCell>{plant.category || "ไม่ระบุ"}</TableCell>
                     <TableCell className="text-muted-foreground">
@@ -748,7 +746,7 @@ const EditPlantModal = ({
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="flex items-center gap-2 text-lg font-bold">
             <Leaf className="h-5 w-5 text-primary" />
-            แก้ไขข้อมูลพันธุ์ไม้
+            แก้ไขข้อมูลพรรณไม้
           </DialogTitle>
           <p className="text-sm text-muted-foreground">ปรับปรุงข้อมูลของ {plant.name}</p>
         </DialogHeader>
@@ -969,7 +967,7 @@ const EditPlantModal = ({
             ยกเลิก
           </Button>
           <Button 
-            className="bg-[#319b5d] hover:bg-[#28844f] text-white" 
+            className="bg-[#1a5f4a] hover:bg-[#1a5f4a] text-white" 
             onClick={handleSave}
             disabled={Object.values(uploadingParts).some(v => v) || uploadingMain}
           >
@@ -1573,7 +1571,7 @@ const AddPlantModal = ({
             ยกเลิก
           </Button>
           <Button 
-            className="bg-[#319b5d] hover:bg-[#28844f] text-white" 
+            className="bg-[#1a5f4a] hover:bg-[#1a5f4a] text-white" 
             onClick={handleSave}
             disabled={isLoading || Object.values(uploadingParts).some(v => v) || uploadingMain}
           >
@@ -1736,7 +1734,7 @@ const Admin = () => {
   };
 
   const titleMap: Record<Tab, { title: string; subtitle: string }> = {
-    dashboard: { title: "แดชบอร์ด", subtitle: "ภาพรวมการใช้งานระบบจำแนกพรรณไม้วันนี้" },
+    dashboard: { title: "ภาพรวมระบบ", subtitle: "ภาพรวมการใช้งานระบบจำแนกพรรณไม้" },
     plants: { title: "จัดการพรรณไม้", subtitle: "เพิ่ม แก้ไข และลบข้อมูลพรรณไม้ในระบบ" },
     statistics: { title: "จัดการหมวดหมู่", subtitle: "เพิ่ม แก้ไข และลบหมวดหมู่พรรณไม้" },
     settings: { title: "ตั้งค่าระบบ", subtitle: "จัดการการตั้งค่าและความปลอดภัย" },
@@ -1788,13 +1786,13 @@ const Admin = () => {
 
           {activeTab === "plants" && (
             <>
-              <Card className="border-border/60 shadow-sm">
+              <Card className="border-border/60 shadow-md">
                 <CardContent className="p-5">
                   <div className="flex flex-col lg:flex-row gap-3">
                     <div className="relative flex-1 min-w-0">
                       <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        placeholder="ค้นหาด้วยชื่อหรือชื่อวิทยาศาสตร์..."
+                        placeholder="ค้นหาด้วยชื่อ หรือชื่อวิทยาศาสตร์"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10 h-11"
@@ -1818,7 +1816,7 @@ const Admin = () => {
                       </SelectContent>
                     </Select>
                     <Button 
-                      className="w-full lg:w-auto bg-[#319b5d] hover:bg-[#28844f] text-white font-semibold gap-2 h-11 shrink-0"
+                      className="w-full lg:w-auto bg-[#1a5f4a] hover:bg-[#1a5f4a] text-white font-semibold gap-2 h-11 shrink-0"
                       onClick={() => setIsAddModalOpen(true)}
                     >
                       <Plus className="h-4 w-4" />
@@ -1828,7 +1826,7 @@ const Admin = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border-border/60 shadow-sm overflow-hidden">
+              <Card className="border-border/60 shadow-md overflow-hidden">
                 <CardHeader className="pb-3 flex flex-row items-center justify-between">
                   <CardTitle className="font-display text-lg">รายการพรรณไม้</CardTitle>
                   <Badge variant="secondary" className="font-mono">
@@ -1847,16 +1845,16 @@ const Admin = () => {
                       <div className="hidden md:block overflow-x-auto">
                         <Table>
                           <TableHeader>
-                            <TableRow className="hover:bg-transparent border-border bg-muted/50">
-                              <TableHead className="pl-6 font-bold text-foreground">ชื่อพรรณไม้</TableHead>
-                              <TableHead className="font-bold text-foreground">ชื่อวิทยาศาสตร์</TableHead>
-                              <TableHead className="text-center font-bold text-foreground">หมวดหมู่</TableHead>
-                              <TableHead className="text-right pr-6 font-bold text-foreground">จัดการ</TableHead>
+                            <TableRow className="hover:bg-transparent border-border bg-white">
+                              <TableHead className="pl-6 font-bold text-[#1a5f4a]">ชื่อพรรณไม้</TableHead>
+                              <TableHead className="font-bold text-[#1a5f4a]">ชื่อวิทยาศาสตร์</TableHead>
+                              <TableHead className="text-center font-bold text-[#1a5f4a]">หมวดหมู่</TableHead>
+                              <TableHead className="text-right pr-6 font-bold text-[#1a5f4a]">จัดการ</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {filteredPlants.map((plant) => (
-                              <TableRow key={plant.id} className="border-border">
+                            {filteredPlants.map((plant, idx) => (
+                              <TableRow key={plant.id} className="border-border" style={{ backgroundColor: idx % 2 === 0 ? "#F5F7F8" : "transparent" }}>
                                 <TableCell className="pl-6 font-medium">
                                   {plant.name}
                                 </TableCell>
@@ -1864,7 +1862,7 @@ const Admin = () => {
                                   <ScientificName name={plant.scientificName} />
                                 </TableCell>
                                 <TableCell className="text-center">
-                                  <Badge variant="outline" className="font-normal justify-center">
+                                  <Badge variant="outline" className="font-normal justify-center" style={{ borderColor: "#D3DAD9" }}>
                                     {plant.category}
                                   </Badge>
                                 </TableCell>
@@ -2046,7 +2044,7 @@ const Admin = () => {
                       className="flex-1"
                     />
                     <Button
-                      className="bg-[#319b5d] hover:bg-[#28844f] text-white font-semibold gap-2 h-11 shrink-0"
+                      className="bg-[#1a5f4a] hover:bg-[#1a5f4a] text-white font-semibold gap-2 h-11 shrink-0"
                       onClick={handleAddCategory}
                     >
                       <Plus className="h-4 w-4" />
@@ -2079,7 +2077,7 @@ const Admin = () => {
                         }}
                       />
                       <Button
-                        className="bg-[#319b5d] hover:bg-[#28844f] text-white font-semibold"
+                        className="bg-[#1a5f4a] hover:bg-[#1a5f4a] text-white font-semibold"
                         onClick={handleUpdateCategory}
                       >
                         บันทึก

@@ -66,7 +66,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-white px-4">
+    <div className="flex items-center justify-center min-h-screen px-4" style={{ backgroundColor: '#00513b' }}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Floating leaves */}
         {leaves.map((leaf) => (
@@ -74,42 +74,48 @@ export default function AdminLogin() {
         ))}
 
         {/* Background gradient blobs */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-green-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
       </div>
 
-      <Card className="w-full max-w-md border-slate-200 bg-white shadow-lg relative z-10">
-        <CardHeader className="space-y-2 text-center pb-6">
+      <Card className="w-full max-w-md bg-white shadow-2xl relative z-10 border-0">
+        <CardHeader className="space-y-3 text-center pb-6 pt-8">
           <div className="flex justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg">
-              <Leaf className="h-7 w-7 text-white" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl" style={{ backgroundColor: '#00513b' }} >
+              <Leaf className="h-8 w-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-900">PlantAdmin</CardTitle>
-          <CardDescription className="text-slate-600">
-            ระบบจัดการพรรณไม้
-          </CardDescription>
+          <div>
+            <CardTitle className="text-3xl font-bold" style={{ color: '#00513b' }}>PlantAdmin</CardTitle>
+            <CardDescription className="text-base mt-2" style={{ color: '#157347' }}>
+              ระบบจัดการพรรณไม้
+            </CardDescription>
+          </div>
         </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700">
+        <CardContent className="pb-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2.5">
+              <Label htmlFor="email" className="text-sm font-medium" style={{ color: '#00513b' }}>
                 อีเมล
               </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@example.com"
+                placeholder="admin@plant.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting || loading}
-                className="bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-green-500 focus:ring-green-500/20"
+                className="h-11 border-2 focus:ring-2 bg-white"
+                style={{ 
+                  borderColor: '#d1d5db',
+                  '--tw-ring-color': 'rgba(0, 81, 59, 0.1)'
+                } as React.CSSProperties}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700">
+            <div className="space-y-2.5">
+              <Label htmlFor="password" className="text-sm font-medium" style={{ color: '#00513b' }}>
                 รหัสผ่าน
               </Label>
               <div className="relative">
@@ -120,18 +126,23 @@ export default function AdminLogin() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isSubmitting || loading}
-                  className="bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-green-500 focus:ring-green-500/20 pr-10"
+                  className="h-11 border-2 focus:ring-2 bg-white pr-10"
+                  style={{ 
+                    borderColor: '#d1d5db',
+                    '--tw-ring-color': 'rgba(0, 81, 59, 0.1)'
+                  } as React.CSSProperties}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-900"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                  style={{ color: '#00513b' }}
                   tabIndex={-1}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="h-5 w-5" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-5 w-5" />
                   )}
                 </button>
               </div>
@@ -140,7 +151,8 @@ export default function AdminLogin() {
             <Button
               type="submit"
               disabled={isSubmitting || loading}
-              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold h-11 mt-6"
+              className="w-full text-white font-semibold h-11 mt-7 text-base"
+              style={{ backgroundColor: '#00513b' }}
             >
               {isSubmitting || loading ? (
                 <>
@@ -153,13 +165,13 @@ export default function AdminLogin() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-            <p className="text-xs text-slate-700 text-center">
+          <div className="mt-8 p-4 rounded-xl border-2" style={{ backgroundColor: '#f0f7f3', borderColor: '#c8e6d9' }}>
+            <p className="text-xs text-center" style={{ color: '#00513b' }}>
               💡 <strong>Demo Account:</strong>
+              <br className="mt-1" />
+              <span className="text-xs">Email: admin@plant.com</span>
               <br />
-              Email: admin@plant.com
-              <br />
-              Password: admin123
+              <span className="text-xs">Password: admin123</span>
             </p>
           </div>
         </CardContent>
