@@ -6,25 +6,37 @@ interface LogoProps {
 }
 
 const sizeMap = {
-  sm: { icon: "h-5 w-5", text: "text-lg" },
-  md: { icon: "h-6 w-6", text: "text-xl" },
-  lg: { icon: "h-8 w-8", text: "text-2xl" },
+  sm: { icon: "h-5 w-5", text: "text-base sm:text-lg" },
+  md: { icon: "h-6 w-6", text: "text-lg sm:text-xl" },
+  lg: { icon: "h-8 w-8", text: "text-xl sm:text-2xl" },
 };
 
 const Logo = ({ size = "md", showText = true }: LogoProps) => {
   const { icon, text } = sizeMap[size];
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative flex items-center">
+    <div className="flex items-center gap-2 min-w-0">
+      <div className="relative flex items-center flex-shrink-0">
         <Sprout className={`${icon} text-white`} />
-        <Leaf className={`${icon} text-white absolute -right-1 -top-1`} style={{ width: "60%", height: "60%" }} />
+        <Leaf
+          className={`${icon} text-white absolute -right-1 -top-1`}
+          style={{ width: "60%", height: "60%" }}
+        />
       </div>
 
       {showText && (
-        <div className="flex flex-col">
-          <span className={`${text} font-bold text-white`}>Plantify KU SRC.</span>
-          <span className="text-sm text-white/70 -mt-1">ฐานข้อมูลพรรณไม้เพื่อการเรียนรู้ มหาวิทยาลัยเกษตรศาสตร์ วิทยาเขตศรีราชา</span>
+        <div className="flex flex-col min-w-0">
+          <span
+            className={`${text} font-bold text-white leading-tight truncate`}
+          >
+            Plantify KU SRC.
+          </span>
+
+          <span className="text-[9px] sm:text-xs md:text-sm text-white/70 leading-tight break-words">
+            ฐานข้อมูลพรรณไม้เพื่อการเรียนรู้
+            <br />
+            มหาวิทยาลัยเกษตรศาสตร์ วิทยาเขตศรีราชา
+          </span>
         </div>
       )}
     </div>
