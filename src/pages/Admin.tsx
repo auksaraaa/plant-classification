@@ -1347,11 +1347,11 @@ const AddPlantModal = ({
           <div className="space-y-2">
             <Label>ID (รหัสประจำตัว) <span className="text-destructive">*</span></Label>
             <Input
-              placeholder="เช่น taku, lavender"
+              placeholder="เช่น Taku, Praduban"
               value={formData.id || ""}
               onChange={(e) => handleChange("id", e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">ไม่เว้นวรรค หรือใช้เครื่องหมายพิเศษ</p>
+            <p className="text-xs text-muted-foreground">ใช้ภาษาอังกฤษเท่านั้น ขึ้นต้นด้วยตัวพิมพ์ใหญ่ และห้ามเว้นวรรคหรือใช้สัญลักษณ์พิเศษ</p>
           </div>
 
           <div className="flex gap-4 items-start">
