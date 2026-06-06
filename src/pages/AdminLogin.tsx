@@ -164,16 +164,6 @@ export default function AdminLogin() {
               )}
             </Button>
           </form>
-
-          <div className="mt-8 p-4 rounded-xl border-2" style={{ backgroundColor: '#f0f7f3', borderColor: '#c8e6d9' }}>
-            <p className="text-xs text-center" style={{ color: '#00513b' }}>
-              💡 <strong>Demo Account:</strong>
-              <br className="mt-1" />
-              <span className="text-xs">Email: admin@plant.com</span>
-              <br />
-              <span className="text-xs">Password: admin123</span>
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

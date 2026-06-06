@@ -16,7 +16,7 @@ const Navbar = () => {
 
   return (
     <nav className="sticky top-0 z-50 border-b backdrop-blur-sm" style={{ backgroundColor: '#00513b' }}>
-      <div className="container max-w-full px-4 flex h-14 md:h-16 items-center justify-between">
+      <div className="container max-w-full px-2 sm:px-4 flex h-13 md:h-16 items-center justify-between">
         <Link to="/" className="flex items-center flex-shrink-0">
           <Logo size="sm" showText={true} />
         </Link>
@@ -27,7 +27,7 @@ const Navbar = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`px-2 lg:px-4 py-1.5 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
                 location.pathname === item.path
                   ? "bg-white/20 text-white"
                   : "text-white/80 hover:text-white hover:bg-white/10"
@@ -52,13 +52,13 @@ const Navbar = () => {
       {/* Mobile Dropdown Menu */}
       {mobileOpen && (
         <div className="md:hidden border-t animate-in fade-in duration-200" style={{ backgroundColor: '#00513b' }}>
-          <div className="container max-w-full px-4 py-3 flex flex-col gap-1 pb-4">
+          <div className="container max-w-full px-2 sm:px-4 py-2 flex flex-col gap-0.5 pb-3">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 onClick={() => setMobileOpen(false)}
-                className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                   location.pathname === item.path
                     ? "bg-white/20 text-white"
                     : "text-white/80 hover:text-white hover:bg-white/10"
