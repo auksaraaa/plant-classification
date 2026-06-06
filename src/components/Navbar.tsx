@@ -16,8 +16,8 @@ const Navbar = () => {
 
   return (
     <nav className="sticky top-0 z-50 border-b backdrop-blur-sm" style={{ backgroundColor: '#00513b' }}>
-      <div className="container max-w-full px-2 sm:px-4 flex h-12 md:h-16 items-center justify-between">
-        <Link to="/" className="flex items-center flex-shrink-0">
+      <div className="container max-w-full px-2 sm:px-4 flex h-14 md:h-16 items-center justify-between">
+        <Link to="/" className="flex items-center flex-1 min-w-0">
           <Logo size="sm" showText={true} />
         </Link>
 
@@ -27,7 +27,7 @@ const Navbar = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`px-2 lg:px-3 py-1 rounded-lg text-[11px] lg:text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`px-2 lg:px-3 py-1.5 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
                 location.pathname === item.path
                   ? "bg-white/20 text-white"
                   : "text-white/80 hover:text-white hover:bg-white/10"
