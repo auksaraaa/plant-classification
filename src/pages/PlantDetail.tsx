@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Leaf, Flower2, Cherry, Ruler, Layers, Sprout, Shield, AlertCircle, ImageOff, X } from "lucide-react";
 import { usePlant } from "@/hooks/use-plants";
 import { ScientificName } from "@/components/ui/ScientificName";
@@ -49,10 +49,10 @@ const iucnStatusMap: Record<string, string> = {
 
 const PlantDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { plant, loading: plantLoading, error: plantError } = usePlant(id);
   const [selectedImage, setSelectedImage] = useState<{ url: string; label: string } | null>(null);
 
-  // Show loading while fetching plant data
   if (plantLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
@@ -62,7 +62,6 @@ const PlantDetail = () => {
     );
   }
 
-  // Show error if plant fetch failed
   if (plantError) {
     return (
       <div className="container py-20 text-center">
@@ -89,7 +88,7 @@ const PlantDetail = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
         <div className="flex flex-col gap-3 sm:gap-4 h-fit">
-          <div 
+          <div
             className="rounded-xl sm:rounded-2xl overflow-hidden plant-card-shadow bg-accent cursor-pointer hover:opacity-90 transition-opacity"
             onClick={() => {
               if (plant.image) {
@@ -98,12 +97,12 @@ const PlantDetail = () => {
             }}
           >
             {plant.image ? (
-              <img 
-                src={plant.image} 
-                alt={plant.name} 
-                width={800} 
-                height={800} 
-                className="w-full h-full object-cover" 
+              <img
+                src={plant.image}
+                alt={plant.name}
+                width={800}
+                height={800}
+                className="w-full h-full object-cover"
                 onError={(e) => {
                   console.error('Image failed to load:', plant.image);
                   e.currentTarget.style.display = 'none';
@@ -116,39 +115,43 @@ const PlantDetail = () => {
             )}
           </div>
 
-          {plant.images && Object.values(plant.images).some(img => img) && (
+          {plant.images && Object.values(plant.images).some(imgs => Array.isArray(imgs) && imgs.length > 0) && (
             <div>
               <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 {(Object.keys(partLabels) as Array<'leaf' | 'flower' | 'fruit' | 'bark'>).map((partType) => {
-                  const imageUrl = plant.images?.[partType];
+                  const images = plant.images?.[partType];
+                  const imageArray = Array.isArray(images) ? images : [];
+                  if (imageArray.length === 0) return null;
+
                   return (
                     <div
                       key={partType}
-                      className="rounded-lg overflow-hidden bg-accent cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => {
-                        if (imageUrl) {
-                          setSelectedImage({ url: imageUrl, label: partLabels[partType] });
-                        }
-                      }}
+                      className="rounded-lg overflow-hidden bg-accent cursor-pointer hover:shadow-lg transition-all duration-200 group"
+                      onClick={() => navigate(`/plant/${id}/gallery/${partType}`)}
                     >
-                      <div className="aspect-square flex items-center justify-center bg-secondary/40">
-                        {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={partLabels[partType]}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              console.error(`Failed to load ${partType} image:`, imageUrl);
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                            <ImageOff className="h-6 w-6 sm:h-8 sm:w-8" />
-                            <span className="text-sm sm:text-base">{partLabels[partType]}</span>
+                      <div className="aspect-square flex items-center justify-center bg-secondary/40 relative">
+                        <img
+                          src={imageArray[0]}
+                          alt={partLabels[partType]}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error(`Failed to load ${partType} image:`, imageArray[0]);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        {imageArray.length > 1 && (
+                          <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-semibold">
+                            +{imageArray.length - 1}
                           </div>
                         )}
+
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-200 flex items-center justify-center">
+                          <p className="text-white text-lg font-medium text-center px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            กดเพื่อดูรูปภาพเพิ่มเติม
+                          </p>
+                        </div>
                       </div>
                       <p className="text-sm sm:text-base font-medium text-foreground p-2 text-center">{partLabels[partType]}</p>
                     </div>
@@ -244,7 +247,7 @@ const PlantDetail = () => {
             >
               <X className="h-6 w-6" />
             </Button>
-            
+
             {selectedImage && (
               <div className="w-full h-full flex flex-col items-center justify-center p-4">
                 <img
@@ -254,7 +257,7 @@ const PlantDetail = () => {
                 />
                 <p className="text-white text-center mt-4 text-base sm:text-lg">{selectedImage.label}</p>
               </div>
-            )}  
+            )}
           </div>
         </DialogContent>
       </Dialog>

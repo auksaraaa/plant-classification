@@ -9,6 +9,7 @@ import Footer from "./components/Footer";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import PlantDetail from "./pages/PlantDetail";
+import PlantPartGallery from "./pages/PlantPartGallery";
 import HowToUse from "./pages/HowToUse";
 import About from "./pages/About";
 import Admin from "./pages/Admin";
@@ -29,6 +30,7 @@ const AppContent = () => {
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<Search />} />
           <Route path="/plant/:id" element={<PlantDetail />} />
+          <Route path="/plant/:id/gallery/:partType" element={<PlantPartGallery />} />
           <Route path="/how-to-use" element={<HowToUse />} />
           <Route path="/about" element={<About />} />
           <Route path="/admin-login" element={<AdminLogin />} />

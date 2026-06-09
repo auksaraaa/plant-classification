@@ -13,10 +13,10 @@ export interface Plant {
   createdAt?: number;
   updatedAt?: number;
   images?: {
-    flower?: string;
-    leaf?: string;
-    fruit?: string;
-    bark?: string;
+    flower?: string[];
+    leaf?: string[];
+    fruit?: string[];
+    bark?: string[];
   };
   characteristics: {
     leaf: string;

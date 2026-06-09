@@ -46,12 +46,16 @@ export const uploadMultipleImages = async (
 };
 
 // Delete image from Cloud Storage
-export const deleteImage = async (storagePath: string): Promise<void> => {
+export const deleteImage = async (path: string): Promise<void> => {
   try {
-    const storageRef = ref(storage, storagePath);
-    await deleteObject(storageRef);
-  } catch (error) {
-    console.error('Error deleting image:', error);
+    const imageRef = ref(storage, path);
+    await deleteObject(imageRef);
+  } catch (error: any) {
+    // ถ้าไฟล์ไม่มีอยู่แล้ว ถือว่าสำเร็จ ไม่ต้อง throw
+    if (error?.code === 'storage/object-not-found') {
+      console.warn('Image already deleted or not found:', path);
+      return;
+    }
     throw error;
   }
 };

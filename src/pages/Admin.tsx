@@ -416,10 +416,10 @@ const EditPlantModal = ({
     benefits: "",
     iucnStatus: "",
     images: {
-      flower: "",
-      leaf: "",
-      fruit: "",
-      bark: "",
+      flower: [],
+      leaf: [],
+      fruit: [],
+      bark: [],
     },
     characteristics: {
       leaf: "",
@@ -433,6 +433,7 @@ const EditPlantModal = ({
   const [partPreview, setPartPreview] = useState<Record<string, string>>({});
   const [uploadingMain, setUploadingMain] = useState(false);
   const [mainPreview, setMainPreview] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<{ partType: 'flower' | 'leaf' | 'fruit' | 'bark'; index: number } | null>(null);
 
   useEffect(() => {
     if (plant) {
@@ -449,10 +450,10 @@ const EditPlantModal = ({
         benefits: plant.benefits || "",
         iucnStatus: plant.iucnStatus || "",
         images: {
-          flower: plant.images?.flower || "",
-          leaf: plant.images?.leaf || "",
-          fruit: plant.images?.fruit || "",
-          bark: plant.images?.bark || "",
+          flower: plant.images?.flower || [],
+          leaf: plant.images?.leaf || [],
+          fruit: plant.images?.fruit || [],
+          bark: plant.images?.bark || [],
         },
         characteristics: {
           leaf: plant.characteristics?.leaf || "",
@@ -487,8 +488,8 @@ const EditPlantModal = ({
     e: React.ChangeEvent<HTMLInputElement>,
     partType: 'flower' | 'leaf' | 'fruit' | 'bark'
   ) => {
-    const file = e.target.files?.[0];
-    if (!file || !formData.id) {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !formData.id) {
       toast.error("ไม่สามารถอัปโหลดได้", {
         position: "bottom-right",
         style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
@@ -496,43 +497,36 @@ const EditPlantModal = ({
       return;
     }
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPartPreview((prev) => ({
-        ...prev,
-        [partType]: reader.result as string,
-      }));
-    };
-    reader.readAsDataURL(file);
-
-    // Upload to Firebase
+    // Upload all files
     try {
       setUploadingParts((prev) => ({ ...prev, [partType]: true }));
       
-      // Delete old image if exists
-      if (formData.images?.[partType]) {
-        try {
-          const oldUrl = formData.images[partType];
-          const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
-          if (pathMatch) {
-            const oldPath = decodeURIComponent(pathMatch[1]);
-            await deleteImage(oldPath);
-          }
-        } catch (deleteError) {
-          console.warn('Could not delete old image:', deleteError);
-        }
+      const newUrls: string[] = [];
+      for (const file of Array.from(files)) {
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPartPreview((prev) => ({
+            ...prev,
+            [partType]: reader.result as string,
+          }));
+        };
+        reader.readAsDataURL(file);
+
+        const url = await uploadPlantPartImage(file, formData.id, partType);
+        newUrls.push(url);
       }
-      
-      const url = await uploadPlantPartImage(file, formData.id, partType);
+
       setFormData((prev) => ({
         ...prev,
         images: {
           ...(prev.images || {}),
-          [partType]: url,
+          [partType]: [...(Array.isArray(prev.images?.[partType]) ? prev.images[partType] : []), ...newUrls],
         },
       }));
-      toast.success(`อัปโหลดรูป${partType === 'flower' ? 'ดอก' : partType === 'leaf' ? 'ใบ' : partType === 'fruit' ? 'ผล' : 'เปลือก'}สำเร็จ`, {
+      
+      const partLabel = partType === 'flower' ? 'ดอก' : partType === 'leaf' ? 'ใบ' : partType === 'fruit' ? 'ผล' : 'เปลือก';
+      toast.success(`อัปโหลดรูป${partLabel}${newUrls.length}รูปสำเร็จ`, {
         position: "bottom-right",
         style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
       });
@@ -630,11 +624,17 @@ const EditPlantModal = ({
     }
   };
 
-  const handleDeletePartImage = async (partType: 'flower' | 'leaf' | 'fruit' | 'bark') => {
-    if (!formData.images?.[partType]) return;
-    
+  const handleDeletePartImage = async (
+    partType: "flower" | "leaf" | "fruit" | "bark",
+    index: number
+  ) => {
+    if (!formData.images?.[partType] || !Array.isArray(formData.images[partType])) return;
+
+    const images = formData.images[partType] as string[];
+    if (index < 0 || index >= images.length) return;
+
     try {
-      const oldUrl = formData.images[partType];
+      const oldUrl = images[index];
       const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
       if (pathMatch) {
         const oldPath = decodeURIComponent(pathMatch[1]);
@@ -644,14 +644,9 @@ const EditPlantModal = ({
         ...prev,
         images: {
           ...(prev.images || {}),
-          [partType]: "",
+          [partType]: images.filter((_, i) => i !== index),
         },
       }));
-      setPartPreview((prev) => {
-        const newPreview = { ...prev };
-        delete newPreview[partType];
-        return newPreview;
-      });
       toast.success("ลบรูปสำเร็จ", {
         position: "bottom-right",
         style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
@@ -665,62 +660,307 @@ const EditPlantModal = ({
     }
   };
 
-  const PartImageUploader = ({ partType, label }: { partType: 'flower' | 'leaf' | 'fruit' | 'bark'; label: string }) => (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="flex gap-3 items-end">
-        <div className="w-20 h-20 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted/30 overflow-hidden flex-shrink-0">
-          {partPreview[partType] ? (
-            <img
-              src={partPreview[partType]}
-              alt={label}
-              className="w-full h-full object-cover"
-            />
-          ) : formData.images?.[partType] ? (
-            <img
-              src={formData.images[partType]}
-              alt={label}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+const handleDeleteMultiplePartImages = async (
+  partType: "flower" | "leaf" | "fruit" | "bark",
+  indexes: number[]
+) => {
+  if (!formData.images?.[partType] || !Array.isArray(formData.images[partType])) return;
+
+  const images = formData.images[partType] as string[];
+  const sorted = [...indexes].sort((a, b) => b - a);
+
+  for (const idx of sorted) {
+    if (idx < 0 || idx >= images.length) continue;
+    try {
+      const oldUrl = images[idx];
+      const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+      if (pathMatch) {
+        const oldPath = decodeURIComponent(pathMatch[1]);
+        await deleteImage(oldPath);
+      }
+    } catch (error) {
+      console.error(`Error deleting image at index ${idx}:`, error);
+    }
+  }
+
+  setFormData((prev) => ({
+    ...prev,
+    images: {
+      ...(prev.images || {}),
+      [partType]: (prev.images?.[partType] as string[]).filter((_, i) => !indexes.includes(i)),
+    },
+  }));
+
+  toast.success(`ลบ ${indexes.length} รูปสำเร็จ`, {
+    position: "bottom-right",
+    style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+  });
+};
+
+const PartImageUploader = ({
+  partType,
+  label,
+  onDeleteClick,
+  onDeleteMultiple,
+}: {
+  partType: "flower" | "leaf" | "fruit" | "bark";
+  label: string;
+  onDeleteClick: (idx: number) => void;
+  onDeleteMultiple: (indexes: number[]) => void;
+}) => {
+  const [showAllDialog, setShowAllDialog] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
+
+  const images = Array.isArray(formData.images?.[partType])
+    ? (formData.images[partType] as string[])
+    : [];
+  const LIMIT = 5;
+  const visibleImages = images.slice(0, LIMIT);
+  const hiddenCount = images.length - LIMIT;
+
+  const toggleSelect = (idx: number) => {
+    setSelectedIndexes((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedIndexes(
+      selectedIndexes.length === images.length ? [] : images.map((_, i) => i)
+    );
+  };
+
+  const handleDeleteSelected = () => {
+  onDeleteMultiple(selectedIndexes);
+  setSelectedIndexes([]);
+  setSelectMode(false);
+  if (images.length - selectedIndexes.length <= LIMIT) setShowAllDialog(false);
+};
+
+  const openDialog = () => {
+    setSelectMode(false);
+    setSelectedIndexes([]);
+    setShowAllDialog(true);
+  };
+
+  return (
+    <div className="space-y-3 w-full">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <Label className="text-base font-medium">
+          {label}
+          {images.length > 0 && (
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
+              ({images.length} รูป)
+            </span>
           )}
-        </div>
-        <div className="flex-1 flex flex-col gap-2">
-          <label className="block">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => handleImagePartUpload(e, partType)}
-              disabled={uploadingParts[partType]}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full cursor-pointer"
-              disabled={uploadingParts[partType]}
-              asChild
-            >
-              <span>
-                {uploadingParts[partType] ? "กำลังอัปโหลด..." : "เลือกรูป"}
-              </span>
-            </Button>
-          </label>
-          {formData.images?.[partType] && (
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={() => handleDeletePartImage(partType)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        </Label>
+        <label className="block">
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => handleImagePartUpload(e, partType)}
+            disabled={uploadingParts[partType]}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="cursor-pointer"
+            disabled={uploadingParts[partType]}
+            asChild
+          >
+            <span>{uploadingParts[partType] ? "กำลังอัปโหลด..." : "+ เพิ่มรูป"}</span>
+          </Button>
+        </label>
       </div>
+
+      {/* Thumbnail preview (max LIMIT) */}
+      {images.length > 0 && (
+        <>
+          <div className="flex flex-row flex-wrap gap-3">
+            {visibleImages.map((imageUrl, idx) => (
+              <div
+                key={idx}
+                className="relative group rounded-lg overflow-hidden bg-muted/30 w-24 h-24 shrink-0"
+              >
+                <img
+                  src={imageUrl}
+                  alt={`${label}-${idx}`}
+                  className="w-full h-full object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => onDeleteClick(idx)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {images.length > LIMIT && (
+            <button
+              type="button"
+              onClick={openDialog}
+              className="text-sm text-primary hover:underline font-medium"
+            >
+              แสดงรูปภาพเพิ่มเติม {hiddenCount} รูป
+            </button>
+          )}
+        </>
+      )}
+
+      {/* Dialog — all images */}
+      <Dialog
+        open={showAllDialog}
+        onOpenChange={(open) => {
+          setShowAllDialog(open);
+          if (!open) {
+            setSelectMode(false);
+            setSelectedIndexes([]);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden gap-0">
+          {/* Dialog header — title only */}
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle className="text-lg font-bold">
+              {label} ทั้งหมด ({images.length} รูป)
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Image grid */}
+          <div className="p-6 overflow-y-auto max-h-[65vh]">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              {images.map((imageUrl, idx) => {
+                const isSelected = selectedIndexes.includes(idx);
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => selectMode && toggleSelect(idx)}
+                    className={[
+                      "relative group rounded-lg overflow-hidden bg-muted/30 aspect-square",
+                      selectMode ? "cursor-pointer" : "",
+                      isSelected ? "ring-2 ring-destructive" : "",
+                    ].join(" ")}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`${label}-${idx}`}
+                      className="w-full h-full object-cover"
+                    />
+
+                    {/* Hover/select overlay */}
+                    <div
+                      className={[
+                        "absolute inset-0 transition-colors",
+                        isSelected
+                          ? "bg-destructive/25"
+                          : "bg-black/0 group-hover:bg-black/15",
+                      ].join(" ")}
+                    />
+
+                    {/* Checkbox circle (select mode) */}
+                    {selectMode && (
+                      <div
+                        className={[
+                          "absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                          isSelected
+                            ? "bg-destructive border-destructive"
+                            : "bg-white/80 border-white",
+                        ].join(" ")}
+                      >
+                        {isSelected && <X className="h-3 w-3 text-white" />}
+                      </div>
+                    )}
+
+                    {/* Number badge (normal mode) */}
+                    {!selectMode && (
+                      <div className="absolute top-1.5 left-1.5 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {idx + 1}
+                      </div>
+                    )}
+
+                    {/* Delete button (normal mode, hover) */}
+                    {!selectMode && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteClick(idx);
+                          if (images.length - 1 <= LIMIT) setShowAllDialog(false);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-end gap-3">
+            {selectMode ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="text-sm text-primary hover:underline whitespace-nowrap"
+                >
+                  {selectedIndexes.length === images.length
+                    ? "ยกเลิกทั้งหมด"
+                    : "เลือกทั้งหมด"}
+                </button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  disabled={selectedIndexes.length === 0}
+                  onClick={handleDeleteSelected}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                  ลบ{selectedIndexes.length > 0 ? ` ${selectedIndexes.length} รูป` : ""}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectMode(false);
+                    setSelectedIndexes([]);
+                  }}
+                >
+                  ยกเลิก
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectMode(true)}
+              >
+                เลือกเพื่อลบ
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+};
 
   const handleSave = () => {
     if (!formData.name || !formData.scientificName || !formData.category) {
@@ -739,17 +979,43 @@ const EditPlantModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden gap-0">
-        <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-            <Leaf className="h-5 w-5 text-primary" />
-            แก้ไขข้อมูลพรรณไม้
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">ปรับปรุงข้อมูลของ {plant.name}</p>
-        </DialogHeader>
+    <>
+      <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการลบรูป</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณแน่ใจหรือไม่ว่าต้องการลบรูปนี้? การกระทำนี้ไม่สามารถย้อนกลับได้
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingDelete) {
+                  handleDeletePartImage(pendingDelete.partType, pendingDelete.index);
+                  setPendingDelete(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              ลบ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-        <div className="p-6 overflow-y-auto max-h-[75vh] space-y-5">
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden gap-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <Leaf className="h-5 w-5 text-primary" />
+              แก้ไขข้อมูลพรรณไม้
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">ปรับปรุงข้อมูลของ {plant.name}</p>
+          </DialogHeader>
+
+          <div className="p-6 overflow-y-auto max-h-[75vh] space-y-5">
           <div className="flex gap-4 items-start">
             <div className="w-24 h-24 shrink-0 rounded-xl border flex items-center justify-center bg-muted overflow-hidden">
               {mainPreview ? (
@@ -845,11 +1111,31 @@ const EditPlantModal = ({
 
           <div className="space-y-2">
             <Label className="font-semibold text-base">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <PartImageUploader partType="leaf" label="รูปใบ" />
-              <PartImageUploader partType="flower" label="รูปดอก" />
-              <PartImageUploader partType="fruit" label="รูปผล" />
-              <PartImageUploader partType="bark" label="รูปเปลือก" />
+            <div className="grid grid-cols-1 gap-6">
+              <PartImageUploader
+  partType="leaf"
+  label="รูปใบ"
+  onDeleteClick={(idx) => setPendingDelete({ partType: "leaf", index: idx })}
+  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("leaf", indexes)}
+/>
+<PartImageUploader
+  partType="flower"
+  label="รูปดอก"
+  onDeleteClick={(idx) => setPendingDelete({ partType: "flower", index: idx })}
+  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("flower", indexes)}
+/>
+<PartImageUploader
+  partType="fruit"
+  label="รูปผล"
+  onDeleteClick={(idx) => setPendingDelete({ partType: "fruit", index: idx })}
+  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("fruit", indexes)}
+/>
+<PartImageUploader
+  partType="bark"
+  label="รูปเปลือก"
+  onDeleteClick={(idx) => setPendingDelete({ partType: "bark", index: idx })}
+  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("bark", indexes)}
+/>
             </div>
           </div>
 
@@ -974,6 +1260,7 @@ const EditPlantModal = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
@@ -1004,10 +1291,10 @@ const AddPlantModal = ({
     benefits: "",
     iucnStatus: "",
     images: {
-      flower: "",
-      leaf: "",
-      fruit: "",
-      bark: "",
+      flower: [],
+      leaf: [],
+      fruit: [],
+      bark: [],
     },
     characteristics: {
       leaf: "",
@@ -1022,6 +1309,7 @@ const AddPlantModal = ({
   const [partPreview, setPartPreview] = useState<Record<string, string>>({});
   const [uploadingMain, setUploadingMain] = useState(false);
   const [mainPreview, setMainPreview] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<{ partType: 'flower' | 'leaf' | 'fruit' | 'bark'; index: number } | null>(null);
 
   const handleChange = (field: keyof Plant, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -1119,26 +1407,12 @@ const AddPlantModal = ({
     try {
       setUploadingParts((prev) => ({ ...prev, [partType]: true }));
       
-      // Delete old image if exists
-      if (formData.images?.[partType]) {
-        try {
-          const oldUrl = formData.images[partType];
-          const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
-          if (pathMatch) {
-            const oldPath = decodeURIComponent(pathMatch[1]);
-            await deleteImage(oldPath);
-          }
-        } catch (deleteError) {
-          console.warn('Could not delete old image:', deleteError);
-        }
-      }
-      
       const url = await uploadPlantPartImage(file, formData.id, partType);
       setFormData((prev) => ({
         ...prev,
         images: {
           ...(prev.images || {}),
-          [partType]: url,
+          [partType]: [...(Array.isArray(prev.images?.[partType]) ? prev.images[partType] : []), url],
         },
       }));
       toast.success(`อัปโหลดรูป${partType === 'flower' ? 'ดอก' : partType === 'leaf' ? 'ใบ' : partType === 'fruit' ? 'ผล' : 'เปลือก'}สำเร็จ`, {
@@ -1184,11 +1458,17 @@ const AddPlantModal = ({
     }
   };
 
-  const handleDeletePartImage = async (partType: 'flower' | 'leaf' | 'fruit' | 'bark') => {
-    if (!formData.images?.[partType]) return;
-    
+  const handleDeletePartImage = async (
+    partType: "flower" | "leaf" | "fruit" | "bark",
+    index: number
+  ) => {
+    if (!formData.images?.[partType] || !Array.isArray(formData.images[partType])) return;
+
+    const images = formData.images[partType] as string[];
+    if (index < 0 || index >= images.length) return;
+
     try {
-      const oldUrl = formData.images[partType];
+      const oldUrl = images[index];
       const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
       if (pathMatch) {
         const oldPath = decodeURIComponent(pathMatch[1]);
@@ -1198,14 +1478,9 @@ const AddPlantModal = ({
         ...prev,
         images: {
           ...(prev.images || {}),
-          [partType]: "",
+          [partType]: images.filter((_, i) => i !== index),
         },
       }));
-      setPartPreview((prev) => {
-        const newPreview = { ...prev };
-        delete newPreview[partType];
-        return newPreview;
-      });
       toast.success("ลบรูปสำเร็จ", {
         position: "bottom-right",
         style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
@@ -1219,62 +1494,311 @@ const AddPlantModal = ({
     }
   };
 
-  const PartImageUploader = ({ partType, label }: { partType: 'flower' | 'leaf' | 'fruit' | 'bark'; label: string }) => (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="flex gap-3 items-end">
-        <div className="w-20 h-20 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted/30 overflow-hidden flex-shrink-0">
-          {partPreview[partType] ? (
-            <img
-              src={partPreview[partType]}
-              alt={label}
-              className="w-full h-full object-cover"
-            />
-          ) : formData.images?.[partType] ? (
-            <img
-              src={formData.images[partType]}
-              alt={label}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+const handleDeleteMultiplePartImages = async (
+  partType: "flower" | "leaf" | "fruit" | "bark",
+  indexes: number[]
+) => {
+  if (!formData.images?.[partType] || !Array.isArray(formData.images[partType])) return;
+
+  const images = formData.images[partType] as string[];
+  const sorted = [...indexes].sort((a, b) => b - a);
+
+  for (const idx of sorted) {
+    if (idx < 0 || idx >= images.length) continue;
+    try {
+      const oldUrl = images[idx];
+      const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+      if (pathMatch) {
+        const oldPath = decodeURIComponent(pathMatch[1]);
+        await deleteImage(oldPath);
+      }
+    } catch (error) {
+      console.error(`Error deleting image at index ${idx}:`, error);
+    }
+  }
+
+  setFormData((prev) => ({
+    ...prev,
+    images: {
+      ...(prev.images || {}),
+      [partType]: (prev.images?.[partType] as string[]).filter((_, i) => !indexes.includes(i)),
+    },
+  }));
+
+  toast.success(`ลบ ${indexes.length} รูปสำเร็จ`, {
+    position: "bottom-right",
+    style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+  });
+};
+
+  const PartImageUploader = ({
+  partType,
+  label,
+  onDeleteClick,
+  onDeleteMultiple,
+}: {
+  partType: "flower" | "leaf" | "fruit" | "bark";
+  label: string;
+  onDeleteClick: (idx: number) => void;
+  onDeleteMultiple: (indexes: number[]) => void;
+}) => {
+  const [showAllDialog, setShowAllDialog] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
+
+  const images = Array.isArray(formData.images?.[partType])
+    ? (formData.images[partType] as string[])
+    : [];
+  const LIMIT = 5;
+  const visibleImages = images.slice(0, LIMIT);
+  const hiddenCount = images.length - LIMIT;
+
+  const toggleSelect = (idx: number) => {
+    setSelectedIndexes((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedIndexes(
+      selectedIndexes.length === images.length ? [] : images.map((_, i) => i)
+    );
+  };
+
+ const handleDeleteSelected = () => {
+  onDeleteMultiple(selectedIndexes);
+  setSelectedIndexes([]);
+  setSelectMode(false);
+  if (images.length - selectedIndexes.length <= LIMIT) setShowAllDialog(false);
+};
+
+  const openDialog = () => {
+    setSelectMode(false);
+    setSelectedIndexes([]);
+    setShowAllDialog(true);
+  };
+
+  return (
+    <div className="space-y-3 w-full">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <Label className="text-base font-medium">
+          {label}
+          {images.length > 0 && (
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
+              ({images.length} รูป)
+            </span>
           )}
-        </div>
-        <div className="flex-1 flex gap-2 items-end">
-          <label className="flex-1 block">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => handleImagePartUpload(e, partType)}
-              disabled={uploadingParts[partType]}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full cursor-pointer"
-              disabled={uploadingParts[partType]}
-              asChild
-            >
-              <span>
-                {uploadingParts[partType] ? "กำลังอัปโหลด..." : "เลือกรูป"}
-              </span>
-            </Button>
-          </label>
-          {formData.images?.[partType] && (
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={() => handleDeletePartImage(partType)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        </Label>
+        <label className="block">
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => handleImagePartUpload(e, partType)}
+            disabled={uploadingParts[partType]}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="cursor-pointer"
+            disabled={uploadingParts[partType]}
+            asChild
+          >
+            <span>{uploadingParts[partType] ? "กำลังอัปโหลด..." : "+ เพิ่มรูป"}</span>
+          </Button>
+        </label>
       </div>
+
+      {/* Thumbnail preview (max LIMIT) */}
+      {images.length > 0 && (
+        <>
+          <div className="flex flex-row flex-wrap gap-3">
+            {visibleImages.map((imageUrl, idx) => (
+              <div
+                key={idx}
+                className="relative group rounded-lg overflow-hidden bg-muted/30 w-24 h-24 shrink-0"
+              >
+                <img
+                  src={imageUrl}
+                  alt={`${label}-${idx}`}
+                  className="w-full h-full object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => onDeleteClick(idx)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {images.length > LIMIT && (
+            <button
+              type="button"
+              onClick={openDialog}
+              className="text-sm text-primary hover:underline font-medium"
+            >
+              แสดงรูปภาพเพิ่มเติม {hiddenCount} รูป
+            </button>
+          )}
+        </>
+      )}
+
+      {/* Dialog — all images */}
+      <Dialog
+        open={showAllDialog}
+        onOpenChange={(open) => {
+          setShowAllDialog(open);
+          if (!open) {
+            setSelectMode(false);
+            setSelectedIndexes([]);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden gap-0">
+          {/* Dialog header — title only */}
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle className="text-lg font-bold">
+              {label} ทั้งหมด ({images.length} รูป)
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Image grid */}
+          <div className="p-6 overflow-y-auto max-h-[65vh]">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              {images.map((imageUrl, idx) => {
+                const isSelected = selectedIndexes.includes(idx);
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => selectMode && toggleSelect(idx)}
+                    className={[
+                      "relative group rounded-lg overflow-hidden bg-muted/30 aspect-square",
+                      selectMode ? "cursor-pointer" : "",
+                      isSelected ? "ring-2 ring-destructive" : "",
+                    ].join(" ")}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`${label}-${idx}`}
+                      className="w-full h-full object-cover"
+                    />
+
+                    {/* Hover/select overlay */}
+                    <div
+                      className={[
+                        "absolute inset-0 transition-colors",
+                        isSelected
+                          ? "bg-destructive/25"
+                          : "bg-black/0 group-hover:bg-black/15",
+                      ].join(" ")}
+                    />
+
+                    {/* Checkbox circle (select mode) */}
+                    {selectMode && (
+                      <div
+                        className={[
+                          "absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                          isSelected
+                            ? "bg-destructive border-destructive"
+                            : "bg-white/80 border-white",
+                        ].join(" ")}
+                      >
+                        {isSelected && <X className="h-3 w-3 text-white" />}
+                      </div>
+                    )}
+
+                    {/* Number badge (normal mode) */}
+                    {!selectMode && (
+                      <div className="absolute top-1.5 left-1.5 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {idx + 1}
+                      </div>
+                    )}
+
+                    {/* Delete button (normal mode, hover) */}
+                    {!selectMode && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteClick(idx);
+                          if (images.length - 1 <= LIMIT) setShowAllDialog(false);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-between gap-2">
+            {selectMode ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="text-sm text-primary hover:underline whitespace-nowrap"
+                >
+                  {selectedIndexes.length === images.length
+                    ? "ยกเลิกทั้งหมด"
+                    : "เลือกทั้งหมด"}
+                </button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  disabled={selectedIndexes.length === 0}
+                  onClick={handleDeleteSelected}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                  ลบ{selectedIndexes.length > 0 ? ` ${selectedIndexes.length} รูป` : ""}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectMode(false);
+                    setSelectedIndexes([]);
+                  }}
+                >
+                  ยกเลิก
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectMode(true)}
+              >
+                เลือกเพื่อลบ
+              </Button>
+            )}
+
+            <Button variant="outline" onClick={() => setShowAllDialog(false)}>
+              ปิด
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+};
 
   const handleSave = async () => {
     if (!formData.id || !formData.name || !formData.scientificName || !formData.category) {
@@ -1304,10 +1828,10 @@ const AddPlantModal = ({
         benefits: "",
         iucnStatus: "",
         images: {
-          flower: "",
-          leaf: "",
-          fruit: "",
-          bark: "",
+          flower: [],
+          leaf: [],
+          fruit: [],
+          bark: [],
         },
         characteristics: {
           leaf: "",
@@ -1333,19 +1857,45 @@ const AddPlantModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden gap-0">
-        <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-            <Plus className="h-5 w-5 text-primary" />
-            เพิ่มพรรณไม้ใหม่
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">เพิ่มข้อมูลพรรณไม้ใหม่เข้าระบบ</p>
-        </DialogHeader>
+    <>
+      <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการลบรูป</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณแน่ใจหรือไม่ว่าต้องการลบรูปนี้? การกระทำนี้ไม่สามารถย้อนกลับได้
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingDelete) {
+                  handleDeletePartImage(pendingDelete.partType, pendingDelete.index);
+                  setPendingDelete(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              ลบ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden gap-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <Plus className="h-5 w-5 text-primary" />
+              เพิ่มพรรณไม้ใหม่
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">เพิ่มข้อมูลพรรณไม้ใหม่เข้าระบบ</p>
+          </DialogHeader>
 
         <div className="p-6 overflow-y-auto max-h-[75vh] space-y-5">
           <div className="space-y-2">
-            <Label>ID (รหัสประจำตัว) <span className="text-destructive">*</span></Label>
+            <Label>ID (รหัสประจำต้น)<span className="text-destructive">*</span></Label>
             <Input
               placeholder="เช่น Taku, Praduban"
               value={formData.id || ""}
@@ -1449,11 +1999,31 @@ const AddPlantModal = ({
 
           <div className="space-y-2">
             <Label className="font-semibold text-base">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <PartImageUploader partType="leaf" label="รูปใบ" />
-              <PartImageUploader partType="flower" label="รูปดอก" />
-              <PartImageUploader partType="fruit" label="รูปผล" />
-              <PartImageUploader partType="bark" label="รูปเปลือก" />
+            <div className="grid grid-cols-1 gap-6">
+              <PartImageUploader
+  partType="leaf"
+  label="รูปใบ"
+  onDeleteClick={(idx) => setPendingDelete({ partType: "leaf", index: idx })}
+  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("leaf", indexes)}
+/>
+<PartImageUploader
+  partType="flower"
+  label="รูปดอก"
+  onDeleteClick={(idx) => setPendingDelete({ partType: "flower", index: idx })}
+  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("flower", indexes)}
+/>
+<PartImageUploader
+  partType="fruit"
+  label="รูปผล"
+  onDeleteClick={(idx) => setPendingDelete({ partType: "fruit", index: idx })}
+  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("fruit", indexes)}
+/>
+<PartImageUploader
+  partType="bark"
+  label="รูปเปลือก"
+  onDeleteClick={(idx) => setPendingDelete({ partType: "bark", index: idx })}
+  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("bark", indexes)}
+/>
             </div>
           </div>
 
@@ -1578,6 +2148,7 @@ const AddPlantModal = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 

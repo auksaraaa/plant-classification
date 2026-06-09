@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 
-// Floating Leaf Component
 const FloatingLeaf = ({ id, delay }: { id: number; delay: number }) => {
   return (
     <div
@@ -32,9 +31,9 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isError, setIsError] = useState(false);
   const [leaves, setLeaves] = useState<Array<{ id: number; delay: number }>>([]);
 
-  // Generate floating leaves on mount
   useEffect(() => {
     const generatedLeaves = Array.from({ length: 8 }, (_, i) => ({
       id: i,
@@ -47,7 +46,7 @@ export default function AdminLogin() {
     e.preventDefault();
 
     if (!email || !password) {
-      toast.error("กรุณากรอกอีเมลและรหัสผ่าน");
+      toast.error("กรุณากรอกอีเมลและรหัสผ่าน", { position: "bottom-right" });
       return;
     }
 
@@ -56,10 +55,21 @@ export default function AdminLogin() {
       await login(email, password);
       toast.success("เข้าสู่ระบบสำเร็จ");
       navigate("/admin");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "เข้าสู่ระบบล้มเหลว"
-      );
+    } catch (error: any) {
+      setIsError(true);
+      const code = error?.code || error?.message || "";
+      const message =
+        code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found")
+          ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง"
+          : code.includes("too-many-requests")
+          ? "พยายามเข้าสู่ระบบหลายครั้งเกินไป กรุณารอสักครู่"
+          : code.includes("invalid-email")
+          ? "รูปแบบอีเมลไม่ถูกต้อง"
+          : code.includes("network-request-failed")
+          ? "ไม่สามารถเชื่อมต่อเครือข่ายได้"
+          : "เข้าสู่ระบบล้มเหลว กรุณาลองใหม่อีกครั้ง";
+
+      toast.error(message, { position: "bottom-right", duration: 4000 });
     } finally {
       setIsSubmitting(false);
     }
@@ -68,12 +78,9 @@ export default function AdminLogin() {
   return (
     <div className="flex items-center justify-center min-h-screen px-4" style={{ backgroundColor: '#00513b' }}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Floating leaves */}
         {leaves.map((leaf) => (
           <FloatingLeaf key={leaf.id} id={leaf.id} delay={leaf.delay} />
         ))}
-
-        {/* Background gradient blobs */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
       </div>
@@ -81,7 +88,7 @@ export default function AdminLogin() {
       <Card className="w-full max-w-md bg-white shadow-2xl relative z-10 border-0">
         <CardHeader className="space-y-3 text-center pb-6 pt-8">
           <div className="flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-3xl" style={{ backgroundColor: '#00513b' }} >
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl" style={{ backgroundColor: '#00513b' }}>
               <Leaf className="h-8 w-8 text-white" />
             </div>
           </div>
@@ -104,13 +111,10 @@ export default function AdminLogin() {
                 type="email"
                 placeholder="admin@plant.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setIsError(false); }}
                 disabled={isSubmitting || loading}
-                className="h-11 border-2 focus:ring-2 bg-white"
-                style={{ 
-                  borderColor: '#d1d5db',
-                  '--tw-ring-color': 'rgba(0, 81, 59, 0.1)'
-                } as React.CSSProperties}
+                className={`h-11 border-2 focus:ring-2 bg-white ${isError ? "border-red-500 focus:ring-red-200" : ""}`}
+                style={isError ? {} : { borderColor: '#d1d5db' }}
               />
             </div>
 
@@ -124,13 +128,10 @@ export default function AdminLogin() {
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setIsError(false); }}
                   disabled={isSubmitting || loading}
-                  className="h-11 border-2 focus:ring-2 bg-white pr-10"
-                  style={{ 
-                    borderColor: '#d1d5db',
-                    '--tw-ring-color': 'rgba(0, 81, 59, 0.1)'
-                  } as React.CSSProperties}
+                  className={`h-11 border-2 focus:ring-2 bg-white pr-10 ${isError ? "border-red-500 focus:ring-red-200" : ""}`}
+                  style={isError ? {} : { borderColor: '#d1d5db' }}
                 />
                 <button
                   type="button"
@@ -146,6 +147,9 @@ export default function AdminLogin() {
                   )}
                 </button>
               </div>
+              {isError && (
+                <p className="text-red-500 text-xs mt-1">อีเมลหรือรหัสผ่านไม่ถูกต้อง</p>
+              )}
             </div>
 
             <Button
