@@ -149,8 +149,8 @@ const AdminSidebar = ({ active, onChange, isOpen, onClose }: { active: Tab; onCh
           isOpen ? "block" : "hidden"
         )}>
           {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/50" 
+          <div
+            className="absolute inset-0 bg-black/50"
             onClick={onClose}
           />
           {/* Drawer */}
@@ -214,9 +214,9 @@ const AdminHeader = ({
 
 /* ========================= STAT CARD ========================= */
 const toneMap = {
-  primary: "bg-[#e2efe9] text-[#1e6f5c]", // green-ish
-  accent: "bg-[#fef3c7] text-[#b45309]", // amber
-  info: "bg-[#e5f4fd] text-[#1a73e8]", // blue-ish
+  primary: "bg-[#e2efe9] text-[#1e6f5c]",
+  accent: "bg-[#fef3c7] text-[#b45309]",
+  info: "bg-[#e5f4fd] text-[#1a73e8]",
   success: "bg-green-100 text-green-700",
 } as const;
 
@@ -497,13 +497,11 @@ const EditPlantModal = ({
       return;
     }
 
-    // Upload all files
     try {
       setUploadingParts((prev) => ({ ...prev, [partType]: true }));
-      
+
       const newUrls: string[] = [];
       for (const file of Array.from(files)) {
-        // Create preview
         const reader = new FileReader();
         reader.onloadend = () => {
           setPartPreview((prev) => ({
@@ -524,7 +522,7 @@ const EditPlantModal = ({
           [partType]: [...(Array.isArray(prev.images?.[partType]) ? prev.images[partType] : []), ...newUrls],
         },
       }));
-      
+
       const partLabel = partType === 'flower' ? 'ดอก' : partType === 'leaf' ? 'ใบ' : partType === 'fruit' ? 'ผล' : 'เปลือก';
       toast.success(`อัปโหลดรูป${partLabel}${newUrls.length}รูปสำเร็จ`, {
         position: "bottom-right",
@@ -551,18 +549,15 @@ const EditPlantModal = ({
       return;
     }
 
-    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setMainPreview(reader.result as string);
     };
     reader.readAsDataURL(file);
 
-    // Upload to Firebase
     try {
       setUploadingMain(true);
-      
-      // Delete old image if exists
+
       if (formData.image && typeof formData.image === 'string') {
         try {
           const oldUrl = formData.image;
@@ -575,7 +570,7 @@ const EditPlantModal = ({
           console.warn('Could not delete old image:', deleteError);
         }
       }
-      
+
       const url = await uploadPlantImage(file, formData.id);
       setFormData((prev) => ({
         ...prev,
@@ -598,7 +593,7 @@ const EditPlantModal = ({
 
   const handleDeleteMainImage = async () => {
     if (!formData.image || typeof formData.image !== 'string') return;
-    
+
     try {
       const oldUrl = formData.image;
       const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
@@ -660,307 +655,300 @@ const EditPlantModal = ({
     }
   };
 
-const handleDeleteMultiplePartImages = async (
-  partType: "flower" | "leaf" | "fruit" | "bark",
-  indexes: number[]
-) => {
-  if (!formData.images?.[partType] || !Array.isArray(formData.images[partType])) return;
+  const handleDeleteMultiplePartImages = async (
+    partType: "flower" | "leaf" | "fruit" | "bark",
+    indexes: number[]
+  ) => {
+    if (!formData.images?.[partType] || !Array.isArray(formData.images[partType])) return;
 
-  const images = formData.images[partType] as string[];
-  const sorted = [...indexes].sort((a, b) => b - a);
+    const images = formData.images[partType] as string[];
+    const sorted = [...indexes].sort((a, b) => b - a);
 
-  for (const idx of sorted) {
-    if (idx < 0 || idx >= images.length) continue;
-    try {
-      const oldUrl = images[idx];
-      const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
-      if (pathMatch) {
-        const oldPath = decodeURIComponent(pathMatch[1]);
-        await deleteImage(oldPath);
+    for (const idx of sorted) {
+      if (idx < 0 || idx >= images.length) continue;
+      try {
+        const oldUrl = images[idx];
+        const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+        if (pathMatch) {
+          const oldPath = decodeURIComponent(pathMatch[1]);
+          await deleteImage(oldPath);
+        }
+      } catch (error) {
+        console.error(`Error deleting image at index ${idx}:`, error);
       }
-    } catch (error) {
-      console.error(`Error deleting image at index ${idx}:`, error);
     }
-  }
 
-  setFormData((prev) => ({
-    ...prev,
-    images: {
-      ...(prev.images || {}),
-      [partType]: (prev.images?.[partType] as string[]).filter((_, i) => !indexes.includes(i)),
-    },
-  }));
+    setFormData((prev) => ({
+      ...prev,
+      images: {
+        ...(prev.images || {}),
+        [partType]: (prev.images?.[partType] as string[]).filter((_, i) => !indexes.includes(i)),
+      },
+    }));
 
-  toast.success(`ลบ ${indexes.length} รูปสำเร็จ`, {
-    position: "bottom-right",
-    style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
-  });
-};
-
-const PartImageUploader = ({
-  partType,
-  label,
-  onDeleteClick,
-  onDeleteMultiple,
-}: {
-  partType: "flower" | "leaf" | "fruit" | "bark";
-  label: string;
-  onDeleteClick: (idx: number) => void;
-  onDeleteMultiple: (indexes: number[]) => void;
-}) => {
-  const [showAllDialog, setShowAllDialog] = useState(false);
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
-
-  const images = Array.isArray(formData.images?.[partType])
-    ? (formData.images[partType] as string[])
-    : [];
-  const LIMIT = 5;
-  const visibleImages = images.slice(0, LIMIT);
-  const hiddenCount = images.length - LIMIT;
-
-  const toggleSelect = (idx: number) => {
-    setSelectedIndexes((prev) =>
-      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
-    );
+    toast.success(`ลบ ${indexes.length} รูปสำเร็จ`, {
+      position: "bottom-right",
+      style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+    });
   };
 
-  const handleSelectAll = () => {
-    setSelectedIndexes(
-      selectedIndexes.length === images.length ? [] : images.map((_, i) => i)
-    );
-  };
+  const PartImageUploader = ({
+    partType,
+    label,
+    onDeleteClick,
+    onDeleteMultiple,
+  }: {
+    partType: "flower" | "leaf" | "fruit" | "bark";
+    label: string;
+    onDeleteClick: (idx: number) => void;
+    onDeleteMultiple: (indexes: number[]) => void;
+  }) => {
+    const [showAllDialog, setShowAllDialog] = useState(false);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
 
-  const handleDeleteSelected = () => {
-  onDeleteMultiple(selectedIndexes);
-  setSelectedIndexes([]);
-  setSelectMode(false);
-  if (images.length - selectedIndexes.length <= LIMIT) setShowAllDialog(false);
-};
+    const images = Array.isArray(formData.images?.[partType])
+      ? (formData.images[partType] as string[])
+      : [];
+    const LIMIT = 5;
+    const visibleImages = images.slice(0, LIMIT);
+    const hiddenCount = images.length - LIMIT;
 
-  const openDialog = () => {
-    setSelectMode(false);
-    setSelectedIndexes([]);
-    setShowAllDialog(true);
-  };
+    const toggleSelect = (idx: number) => {
+      setSelectedIndexes((prev) =>
+        prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+      );
+    };
 
-  return (
-    <div className="space-y-3 w-full">
-      {/* Header row */}
-      <div className="flex items-center justify-between">
-        <Label className="text-base font-medium">
-          {label}
-          {images.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
-              ({images.length} รูป)
-            </span>
-          )}
-        </Label>
-        <label className="block">
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => handleImagePartUpload(e, partType)}
-            disabled={uploadingParts[partType]}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="cursor-pointer"
-            disabled={uploadingParts[partType]}
-            asChild
-          >
-            <span>{uploadingParts[partType] ? "กำลังอัปโหลด..." : "+ เพิ่มรูป"}</span>
-          </Button>
-        </label>
-      </div>
+    const handleSelectAll = () => {
+      setSelectedIndexes(
+        selectedIndexes.length === images.length ? [] : images.map((_, i) => i)
+      );
+    };
 
-      {/* Thumbnail preview (max LIMIT) */}
-      {images.length > 0 && (
-        <>
-          <div className="flex flex-row flex-wrap gap-3">
-            {visibleImages.map((imageUrl, idx) => (
-              <div
-                key={idx}
-                className="relative group rounded-lg overflow-hidden bg-muted/30 w-24 h-24 shrink-0"
-              >
-                <img
-                  src={imageUrl}
-                  alt={`${label}-${idx}`}
-                  className="w-full h-full object-cover"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => onDeleteClick(idx)}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-          </div>
+    const handleDeleteSelected = () => {
+      onDeleteMultiple(selectedIndexes);
+      setSelectedIndexes([]);
+      setSelectMode(false);
+      if (images.length - selectedIndexes.length <= LIMIT) setShowAllDialog(false);
+    };
 
-          {images.length > LIMIT && (
-            <button
+    const openDialog = () => {
+      setSelectMode(false);
+      setSelectedIndexes([]);
+      setShowAllDialog(true);
+    };
+
+    return (
+      <div className="space-y-3 w-full">
+        {/* Header row */}
+        <div className="flex items-center justify-between">
+          <Label className="text-base font-medium">
+            {label}
+            {images.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({images.length} รูป)
+              </span>
+            )}
+          </Label>
+          <label className="block">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => handleImagePartUpload(e, partType)}
+              disabled={uploadingParts[partType]}
+            />
+            <Button
               type="button"
-              onClick={openDialog}
-              className="text-sm text-primary hover:underline font-medium"
+              variant="outline"
+              size="sm"
+              className="cursor-pointer"
+              disabled={uploadingParts[partType]}
+              asChild
             >
-              แสดงรูปภาพเพิ่มเติม {hiddenCount} รูป
-            </button>
-          )}
-        </>
-      )}
+              <span>{uploadingParts[partType] ? "กำลังอัปโหลด..." : "+ เพิ่มรูป"}</span>
+            </Button>
+          </label>
+        </div>
 
-      {/* Dialog — all images */}
-      <Dialog
-        open={showAllDialog}
-        onOpenChange={(open) => {
-          setShowAllDialog(open);
-          if (!open) {
-            setSelectMode(false);
-            setSelectedIndexes([]);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden gap-0">
-          {/* Dialog header — title only */}
-          <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle className="text-lg font-bold">
-              {label} ทั้งหมด ({images.length} รูป)
-            </DialogTitle>
-          </DialogHeader>
-
-          {/* Image grid */}
-          <div className="p-6 overflow-y-auto max-h-[65vh]">
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {images.map((imageUrl, idx) => {
-                const isSelected = selectedIndexes.includes(idx);
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => selectMode && toggleSelect(idx)}
-                    className={[
-                      "relative group rounded-lg overflow-hidden bg-muted/30 aspect-square",
-                      selectMode ? "cursor-pointer" : "",
-                      isSelected ? "ring-2 ring-destructive" : "",
-                    ].join(" ")}
+        {/* Thumbnail preview (max LIMIT) */}
+        {images.length > 0 && (
+          <>
+            <div className="flex flex-row flex-wrap gap-3">
+              {visibleImages.map((imageUrl, idx) => (
+                <div
+                  key={idx}
+                  className="relative group rounded-xl overflow-hidden bg-muted/30 w-24 h-24 shrink-0 border-2 border-border shadow-sm hover:border-primary/50 transition-colors"
+                >
+                  <img
+                    src={imageUrl}
+                    alt={`${label}-${idx}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                    onClick={() => onDeleteClick(idx)}
                   >
-                    <img
-                      src={imageUrl}
-                      alt={`${label}-${idx}`}
-                      className="w-full h-full object-cover"
-                    />
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
 
-                    {/* Hover/select overlay */}
+            {images.length > LIMIT && (
+              <button
+                type="button"
+                onClick={openDialog}
+                className="text-sm text-primary underline font-medium"
+              >
+                แสดงรูปภาพเพิ่มเติม {hiddenCount} รูป
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Dialog — all images */}
+        <Dialog
+          open={showAllDialog}
+          onOpenChange={(open) => {
+            setShowAllDialog(open);
+            if (!open) {
+              setSelectMode(false);
+              setSelectedIndexes([]);
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden gap-0">
+            <DialogHeader className="px-6 py-4 border-b">
+              <DialogTitle className="text-lg font-bold">
+                {label} ทั้งหมด ({images.length} รูป)
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="p-6 overflow-y-auto max-h-[65vh]">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {images.map((imageUrl, idx) => {
+                  const isSelected = selectedIndexes.includes(idx);
+                  return (
                     <div
+                      key={idx}
+                      onClick={() => selectMode && toggleSelect(idx)}
                       className={[
-                        "absolute inset-0 transition-colors",
-                        isSelected
-                          ? "bg-destructive/25"
-                          : "bg-black/0 group-hover:bg-black/15",
+                        "relative group rounded-xl overflow-hidden bg-muted/30 aspect-square border-2 border-border shadow-sm",
+                        selectMode ? "cursor-pointer" : "",
+                        isSelected ? "ring-2 ring-destructive border-destructive" : "hover:border-primary/50 transition-colors",
                       ].join(" ")}
-                    />
+                    >
+                      <img
+                        src={imageUrl}
+                        alt={`${label}-${idx}`}
+                        className="w-full h-full object-cover"
+                      />
 
-                    {/* Checkbox circle (select mode) */}
-                    {selectMode && (
                       <div
                         className={[
-                          "absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                          "absolute inset-0 transition-colors",
                           isSelected
-                            ? "bg-destructive border-destructive"
-                            : "bg-white/80 border-white",
+                            ? "bg-destructive/25"
+                            : "bg-black/0 group-hover:bg-black/15",
                         ].join(" ")}
-                      >
-                        {isSelected && <X className="h-3 w-3 text-white" />}
-                      </div>
-                    )}
+                      />
 
-                    {/* Number badge (normal mode) */}
-                    {!selectMode && (
-                      <div className="absolute top-1.5 left-1.5 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-full">
-                        {idx + 1}
-                      </div>
-                    )}
+                      {selectMode && (
+                        <div
+                          className={[
+                            "absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                            isSelected
+                              ? "bg-destructive border-destructive"
+                              : "bg-white/80 border-white",
+                          ].join(" ")}
+                        >
+                          {isSelected && <X className="h-3 w-3 text-white" />}
+                        </div>
+                      )}
 
-                    {/* Delete button (normal mode, hover) */}
-                    {!selectMode && (
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteClick(idx);
-                          if (images.length - 1 <= LIMIT) setShowAllDialog(false);
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
+                      {!selectMode && (
+                        <div className="absolute top-1.5 left-1.5 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-full">
+                          {idx + 1}
+                        </div>
+                      )}
+
+                      {!selectMode && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteClick(idx);
+                            if (images.length - 1 <= LIMIT) setShowAllDialog(false);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          {/* Footer */}
-          <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-end gap-3">
-            {selectMode ? (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleSelectAll}
-                  className="text-sm text-primary hover:underline whitespace-nowrap"
-                >
-                  {selectedIndexes.length === images.length
-                    ? "ยกเลิกทั้งหมด"
-                    : "เลือกทั้งหมด"}
-                </button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  disabled={selectedIndexes.length === 0}
-                  onClick={handleDeleteSelected}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />
-                  ลบ{selectedIndexes.length > 0 ? ` ${selectedIndexes.length} รูป` : ""}
-                </Button>
+            <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-end gap-3">
+              {selectMode ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSelectAll}
+                    className="text-sm text-primary hover:underline whitespace-nowrap"
+                  >
+                    {selectedIndexes.length === images.length
+                      ? "ยกเลิกทั้งหมด"
+                      : "เลือกทั้งหมด"}
+                  </button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    disabled={selectedIndexes.length === 0}
+                    onClick={handleDeleteSelected}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    ลบ{selectedIndexes.length > 0 ? ` ${selectedIndexes.length} รูป` : ""}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectMode(false);
+                      setSelectedIndexes([]);
+                    }}
+                  >
+                    ยกเลิก
+                  </Button>
+                </div>
+              ) : (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setSelectMode(false);
-                    setSelectedIndexes([]);
-                  }}
+                  onClick={() => setSelectMode(true)}
                 >
-                  ยกเลิก
+                  เลือกเพื่อลบ
                 </Button>
-              </div>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectMode(true)}
-              >
-                เลือกเพื่อลบ
-              </Button>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  };
 
   const handleSave = () => {
     if (!formData.name || !formData.scientificName || !formData.category) {
@@ -1016,250 +1004,247 @@ const PartImageUploader = ({
           </DialogHeader>
 
           <div className="p-6 overflow-y-auto max-h-[75vh] space-y-5">
-          <div className="flex gap-4 items-start">
-            <div className="w-24 h-24 shrink-0 rounded-xl border flex items-center justify-center bg-muted overflow-hidden">
-              {mainPreview ? (
-                <img src={mainPreview} alt="Main Preview" className="w-full h-full object-cover" />
-              ) : formData.image && typeof formData.image === "string" ? (
-                <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-              ) : (
-                <ImageOff className="h-8 w-8 text-muted-foreground/50" />
-              )}
-            </div>
-            <div className="flex-1 space-y-2">
-              <Label>รูปภาพหลัก</Label>
-              <div className="flex gap-2">
-                <label className="flex-1 block">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleMainImageUpload}
-                    disabled={uploadingMain}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full cursor-pointer"
-                    disabled={uploadingMain}
-                    asChild
-                  >
-                    <span>
-                      {uploadingMain ? "กำลังอัปโหลด..." : "เลือกรูป"}
-                    </span>
-                  </Button>
-                </label>
-                {formData.image && typeof formData.image === "string" && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDeleteMainImage}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+            <div className="flex gap-4 items-start">
+              <div className="w-24 h-24 shrink-0 rounded-xl border-2 border-border flex items-center justify-center bg-muted overflow-hidden shadow-sm">
+                {mainPreview ? (
+                  <img src={mainPreview} alt="Main Preview" className="w-full h-full object-cover" />
+                ) : formData.image && typeof formData.image === "string" ? (
+                  <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageOff className="h-8 w-8 text-muted-foreground/50" />
                 )}
               </div>
+              <div className="flex-1 space-y-2">
+                <Label>รูปภาพหลัก</Label>
+                <div className="flex gap-2">
+                  <label className="flex-1 block">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleMainImageUpload}
+                      disabled={uploadingMain}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full cursor-pointer"
+                      disabled={uploadingMain}
+                      asChild
+                    >
+                      <span>
+                        {uploadingMain ? "กำลังอัปโหลด..." : "เลือกรูป"}
+                      </span>
+                    </Button>
+                  </label>
+                  {formData.image && typeof formData.image === "string" && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteMainImage}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label>ชื่อ <span className="text-destructive">*</span></Label>
-            <Input
-              value={formData.name || ""}
-              onChange={(e) => handleChange("name", e.target.value)}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label>ชื่อ <span className="text-destructive">*</span></Label>
+              <Input
+                value={formData.name || ""}
+                onChange={(e) => handleChange("name", e.target.value)}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>ชื่อวิทยาศาสตร์ <span className="text-destructive">*</span></Label>
-            <Input
-              value={formData.scientificName || ""}
-              onChange={(e) => handleChange("scientificName", e.target.value)}
-              className="italic"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label>ชื่อวิทยาศาสตร์ <span className="text-destructive">*</span></Label>
+              <Input
+                value={formData.scientificName || ""}
+                onChange={(e) => handleChange("scientificName", e.target.value)}
+                className="italic"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>คำอธิบายสั้น</Label>
-            <Textarea
-              className="resize-none h-16"
-              placeholder="คำอธิบายสั้น ๆ (1-2 บรรทัด)"
-              value={formData.shortDescription || ""}
-              onChange={(e) => handleChange("shortDescription", e.target.value)}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label>คำอธิบายสั้น</Label>
+              <Textarea
+                className="resize-none h-16"
+                placeholder="คำอธิบายสั้น ๆ (1-2 บรรทัด)"
+                value={formData.shortDescription || ""}
+                onChange={(e) => handleChange("shortDescription", e.target.value)}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>หมวดหมู่ <span className="text-destructive">*</span></Label>
-            <Select
-              value={formData.category || ""}
-              onValueChange={(val) => handleChange("category", val)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="เลือกหมวดหมู่" />
-              </SelectTrigger>
-              <SelectContent>
-                {(categoryList && categoryList.length > 0 ? categoryList : categories).map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
+            <div className="space-y-2">
+              <Label>หมวดหมู่ <span className="text-destructive">*</span></Label>
+              <Select
+                value={formData.category || ""}
+                onValueChange={(val) => handleChange("category", val)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกหมวดหมู่" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(categoryList && categoryList.length > 0 ? categoryList : categories).map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* ── Part images ── */}
+            <div className="space-y-3">
+              <Label className="font-semibold text-base">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</Label>
+              <div className="grid grid-cols-1 gap-4">
+                {(
+                  [
+                    { partType: "leaf" as const, label: "รูปใบ" },
+                    { partType: "flower" as const, label: "รูปดอก" },
+                    { partType: "fruit" as const, label: "รูปผล" },
+                    { partType: "bark" as const, label: "รูปเปลือก" },
+                  ] as const
+                ).map(({ partType, label }) => (
+                  <div
+                    key={partType}
+                    className="rounded-xl border-2 border-border bg-muted/20 p-4 shadow-sm"
+                  >
+                    <PartImageUploader
+                      partType={partType}
+                      label={label}
+                      onDeleteClick={(idx) => setPendingDelete({ partType, index: idx })}
+                      onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages(partType, indexes)}
+                    />
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="font-semibold text-base">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</Label>
-            <div className="grid grid-cols-1 gap-6">
-              <PartImageUploader
-  partType="leaf"
-  label="รูปใบ"
-  onDeleteClick={(idx) => setPendingDelete({ partType: "leaf", index: idx })}
-  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("leaf", indexes)}
-/>
-<PartImageUploader
-  partType="flower"
-  label="รูปดอก"
-  onDeleteClick={(idx) => setPendingDelete({ partType: "flower", index: idx })}
-  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("flower", indexes)}
-/>
-<PartImageUploader
-  partType="fruit"
-  label="รูปผล"
-  onDeleteClick={(idx) => setPendingDelete({ partType: "fruit", index: idx })}
-  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("fruit", indexes)}
-/>
-<PartImageUploader
-  partType="bark"
-  label="รูปเปลือก"
-  onDeleteClick={(idx) => setPendingDelete({ partType: "bark", index: idx })}
-  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("bark", indexes)}
-/>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label>รายละเอียด</Label>
-            <Textarea
-              className="resize-none h-24"
-              placeholder="ลักษณะเด่น สรรพคุณ การดูแล ฯลฯ"
-              value={formData.description || ""}
-              onChange={(e) => handleChange("description", e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>ความสูง</Label>
-            <Input
-              value={formData.characteristics?.height || ""}
-              onChange={(e) => handleCharacteristicChange("height", e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
-              <Label>ลักษณะของใบ</Label>
+              <Label>รายละเอียด</Label>
               <Textarea
-                className="resize-none h-16"
-                value={formData.characteristics?.leaf || ""}
-                onChange={(e) => handleCharacteristicChange("leaf", e.target.value)}
+                className="resize-none h-24"
+                placeholder="ลักษณะเด่น สรรพคุณ การดูแล ฯลฯ"
+                value={formData.description || ""}
+                onChange={(e) => handleChange("description", e.target.value)}
               />
             </div>
+
             <div className="space-y-2">
-              <Label>ลักษณะของดอกไม้</Label>
-              <Textarea
-                className="resize-none h-16"
-                value={formData.characteristics?.flower || ""}
-                onChange={(e) => handleCharacteristicChange("flower", e.target.value)}
+              <Label>ความสูง</Label>
+              <Input
+                value={formData.characteristics?.height || ""}
+                onChange={(e) => handleCharacteristicChange("height", e.target.value)}
               />
             </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label>ลักษณะของใบ</Label>
+                <Textarea
+                  className="resize-none h-16"
+                  value={formData.characteristics?.leaf || ""}
+                  onChange={(e) => handleCharacteristicChange("leaf", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>ลักษณะของดอกไม้</Label>
+                <Textarea
+                  className="resize-none h-16"
+                  value={formData.characteristics?.flower || ""}
+                  onChange={(e) => handleCharacteristicChange("flower", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>ลักษณะของผล</Label>
+                <Textarea
+                  className="resize-none h-16"
+                  value={formData.characteristics?.fruit || ""}
+                  onChange={(e) => handleCharacteristicChange("fruit", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>ลักษณะของเปลือก</Label>
+                <Textarea
+                  className="resize-none h-16"
+                  value={formData.characteristics?.bark || ""}
+                  onChange={(e) => handleCharacteristicChange("bark", e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label>ลักษณะของผล</Label>
+              <Label>นิเวศวิทยาและการกระจายพันธุ์</Label>
               <Textarea
-                className="resize-none h-16"
-                value={formData.characteristics?.fruit || ""}
-                onChange={(e) => handleCharacteristicChange("fruit", e.target.value)}
+                className="resize-none h-20"
+                placeholder="อธิบายข้อมูลเกี่ยวกับสภาพแวดล้อม ที่อยู่อาศัย และพื้นที่ที่พบของพรรณไม้"
+                value={formData.ecology || ""}
+                onChange={(e) => handleChange("ecology", e.target.value)}
               />
             </div>
+
             <div className="space-y-2">
-              <Label>ลักษณะของเปลือก</Label>
+              <Label>ประโยชน์/โทษ</Label>
               <Textarea
-                className="resize-none h-16"
-                value={formData.characteristics?.bark || ""}
-                onChange={(e) => handleCharacteristicChange("bark", e.target.value)}
+                className="resize-none h-20"
+                placeholder="ประโยชน์ที่ได้รับจากพรรณไม้ และความเสี่ยงหรือโทษที่อาจเกิดขึ้น"
+                value={formData.benefits || ""}
+                onChange={(e) => handleChange("benefits", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>สถานะการอนุรักษ์ IUCN Red List 2022</Label>
+              <Select
+                value={formData.iucnStatus || ""}
+                onValueChange={(val) => handleChange("iucnStatus", val)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกสถานะการอนุรักษ์" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Extinct">สูญพันธุ์ (Extinct - EX)</SelectItem>
+                  <SelectItem value="Extinct in the Wild">สูญพันธุ์ในถิ่นกำเนิด (Extinct in the Wild - EW)</SelectItem>
+                  <SelectItem value="Critically Endangered">วิกฤตอย่างยิ่ง (Critically Endangered - CR)</SelectItem>
+                  <SelectItem value="Endangered">วิกฤต (Endangered - EN)</SelectItem>
+                  <SelectItem value="Vulnerable">เสี่ยงวิกฤต (Vulnerable - VU)</SelectItem>
+                  <SelectItem value="Near Threatened">ใกล้เสี่ยงวิกฤต (Near Threatened - NT)</SelectItem>
+                  <SelectItem value="Least Concern">ไม่เสี่ยง (Least Concern - LC)</SelectItem>
+                  <SelectItem value="Data Deficient">ข้อมูลไม่พอ (Data Deficient - DD)</SelectItem>
+                  <SelectItem value="Not Evaluated">ยังไม่ได้ประเมิน (Not Evaluated - NE)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>อ้างอิง</Label>
+              <Textarea
+                className="resize-none h-20"
+                placeholder="แหล่งที่มาข้อมูล และแหล่งที่มาของภาพ (สามารถระบุ URL หรือชื่อแหล่งที่มา)"
+                value={formData.reference || ""}
+                onChange={(e) => handleChange("reference", e.target.value)}
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>นิเวศวิทยาและการกระจายพันธุ์</Label>
-            <Textarea
-              className="resize-none h-20"
-              placeholder="อธิบายข้อมูลเกี่ยวกับสภาพแวดล้อม ที่อยู่อาศัย และพื้นที่ที่พบของพรรณไม้"
-              value={formData.ecology || ""}
-              onChange={(e) => handleChange("ecology", e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>ประโยชน์/โทษ</Label>
-            <Textarea
-              className="resize-none h-20"
-              placeholder="ประโยชน์ที่ได้รับจากพรรณไม้ และความเสี่ยงหรือโทษที่อาจเกิดขึ้น"
-              value={formData.benefits || ""}
-              onChange={(e) => handleChange("benefits", e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>สถานะการอนุรักษ์ IUCN Red List 2022</Label>
-            <Select
-              value={formData.iucnStatus || ""}
-              onValueChange={(val) => handleChange("iucnStatus", val)}
+          <DialogFooter className="px-6 py-4 border-t bg-muted/30 flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose} disabled={Object.values(uploadingParts).some(v => v) || uploadingMain}>
+              ยกเลิก
+            </Button>
+            <Button
+              className="bg-[#1a5f4a] hover:bg-[#1a5f4a] text-white"
+              onClick={handleSave}
+              disabled={Object.values(uploadingParts).some(v => v) || uploadingMain}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="เลือกสถานะการอนุรักษ์" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Extinct">สูญพันธุ์ (Extinct - EX)</SelectItem>
-                <SelectItem value="Extinct in the Wild">สูญพันธุ์ในถิ่นกำเนิด (Extinct in the Wild - EW)</SelectItem>
-                <SelectItem value="Critically Endangered">วิกฤตอย่างยิ่ง (Critically Endangered - CR)</SelectItem>
-                <SelectItem value="Endangered">วิกฤต (Endangered - EN)</SelectItem>
-                <SelectItem value="Vulnerable">เสี่ยงวิกฤต (Vulnerable - VU)</SelectItem>
-                <SelectItem value="Near Threatened">ใกล้เสี่ยงวิกฤต (Near Threatened - NT)</SelectItem>
-                <SelectItem value="Least Concern">ไม่เสี่ยง (Least Concern - LC)</SelectItem>
-                <SelectItem value="Data Deficient">ข้อมูลไม่พอ (Data Deficient - DD)</SelectItem>
-                <SelectItem value="Not Evaluated">ยังไม่ได้ประเมิน (Not Evaluated - NE)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>อ้างอิง</Label>
-            <Textarea
-              className="resize-none h-20"
-              placeholder="แหล่งที่มาข้อมูล และแหล่งที่มาของภาพ (สามารถระบุ URL หรือชื่อแหล่งที่มา)"
-              value={formData.reference || ""}
-              onChange={(e) => handleChange("reference", e.target.value)}
-            />
-          </div>
-        </div>
-
-        <DialogFooter className="px-6 py-4 border-t bg-muted/30 flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose} disabled={Object.values(uploadingParts).some(v => v) || uploadingMain}>
-            ยกเลิก
-          </Button>
-          <Button 
-            className="bg-[#1a5f4a] hover:bg-[#1a5f4a] text-white" 
-            onClick={handleSave}
-            disabled={Object.values(uploadingParts).some(v => v) || uploadingMain}
-          >
-            บันทึกการแก้ไข
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+              บันทึกการแก้ไข
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
@@ -1335,18 +1320,15 @@ const AddPlantModal = ({
       return;
     }
 
-    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setMainPreview(reader.result as string);
     };
     reader.readAsDataURL(file);
 
-    // Upload to Firebase
     try {
       setUploadingMain(true);
-      
-      // Delete old image if exists
+
       if (formData.image && typeof formData.image === 'string') {
         try {
           const oldUrl = formData.image;
@@ -1359,7 +1341,7 @@ const AddPlantModal = ({
           console.warn('Could not delete old image:', deleteError);
         }
       }
-      
+
       const url = await uploadPlantImage(file, formData.id);
       setFormData((prev) => ({
         ...prev,
@@ -1393,7 +1375,6 @@ const AddPlantModal = ({
       return;
     }
 
-    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setPartPreview((prev) => ({
@@ -1403,10 +1384,9 @@ const AddPlantModal = ({
     };
     reader.readAsDataURL(file);
 
-    // Upload to Firebase
     try {
       setUploadingParts((prev) => ({ ...prev, [partType]: true }));
-      
+
       const url = await uploadPlantPartImage(file, formData.id, partType);
       setFormData((prev) => ({
         ...prev,
@@ -1432,7 +1412,7 @@ const AddPlantModal = ({
 
   const handleDeleteMainImage = async () => {
     if (!formData.image || typeof formData.image !== 'string') return;
-    
+
     try {
       const oldUrl = formData.image;
       const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
@@ -1494,311 +1474,304 @@ const AddPlantModal = ({
     }
   };
 
-const handleDeleteMultiplePartImages = async (
-  partType: "flower" | "leaf" | "fruit" | "bark",
-  indexes: number[]
-) => {
-  if (!formData.images?.[partType] || !Array.isArray(formData.images[partType])) return;
+  const handleDeleteMultiplePartImages = async (
+    partType: "flower" | "leaf" | "fruit" | "bark",
+    indexes: number[]
+  ) => {
+    if (!formData.images?.[partType] || !Array.isArray(formData.images[partType])) return;
 
-  const images = formData.images[partType] as string[];
-  const sorted = [...indexes].sort((a, b) => b - a);
+    const images = formData.images[partType] as string[];
+    const sorted = [...indexes].sort((a, b) => b - a);
 
-  for (const idx of sorted) {
-    if (idx < 0 || idx >= images.length) continue;
-    try {
-      const oldUrl = images[idx];
-      const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
-      if (pathMatch) {
-        const oldPath = decodeURIComponent(pathMatch[1]);
-        await deleteImage(oldPath);
+    for (const idx of sorted) {
+      if (idx < 0 || idx >= images.length) continue;
+      try {
+        const oldUrl = images[idx];
+        const pathMatch = oldUrl.match(/\/o\/(.+?)\?/);
+        if (pathMatch) {
+          const oldPath = decodeURIComponent(pathMatch[1]);
+          await deleteImage(oldPath);
+        }
+      } catch (error) {
+        console.error(`Error deleting image at index ${idx}:`, error);
       }
-    } catch (error) {
-      console.error(`Error deleting image at index ${idx}:`, error);
     }
-  }
 
-  setFormData((prev) => ({
-    ...prev,
-    images: {
-      ...(prev.images || {}),
-      [partType]: (prev.images?.[partType] as string[]).filter((_, i) => !indexes.includes(i)),
-    },
-  }));
+    setFormData((prev) => ({
+      ...prev,
+      images: {
+        ...(prev.images || {}),
+        [partType]: (prev.images?.[partType] as string[]).filter((_, i) => !indexes.includes(i)),
+      },
+    }));
 
-  toast.success(`ลบ ${indexes.length} รูปสำเร็จ`, {
-    position: "bottom-right",
-    style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
-  });
-};
+    toast.success(`ลบ ${indexes.length} รูปสำเร็จ`, {
+      position: "bottom-right",
+      style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
+    });
+  };
 
   const PartImageUploader = ({
-  partType,
-  label,
-  onDeleteClick,
-  onDeleteMultiple,
-}: {
-  partType: "flower" | "leaf" | "fruit" | "bark";
-  label: string;
-  onDeleteClick: (idx: number) => void;
-  onDeleteMultiple: (indexes: number[]) => void;
-}) => {
-  const [showAllDialog, setShowAllDialog] = useState(false);
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
+    partType,
+    label,
+    onDeleteClick,
+    onDeleteMultiple,
+  }: {
+    partType: "flower" | "leaf" | "fruit" | "bark";
+    label: string;
+    onDeleteClick: (idx: number) => void;
+    onDeleteMultiple: (indexes: number[]) => void;
+  }) => {
+    const [showAllDialog, setShowAllDialog] = useState(false);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
 
-  const images = Array.isArray(formData.images?.[partType])
-    ? (formData.images[partType] as string[])
-    : [];
-  const LIMIT = 5;
-  const visibleImages = images.slice(0, LIMIT);
-  const hiddenCount = images.length - LIMIT;
+    const images = Array.isArray(formData.images?.[partType])
+      ? (formData.images[partType] as string[])
+      : [];
+    const LIMIT = 5;
+    const visibleImages = images.slice(0, LIMIT);
+    const hiddenCount = images.length - LIMIT;
 
-  const toggleSelect = (idx: number) => {
-    setSelectedIndexes((prev) =>
-      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
-    );
-  };
+    const toggleSelect = (idx: number) => {
+      setSelectedIndexes((prev) =>
+        prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+      );
+    };
 
-  const handleSelectAll = () => {
-    setSelectedIndexes(
-      selectedIndexes.length === images.length ? [] : images.map((_, i) => i)
-    );
-  };
+    const handleSelectAll = () => {
+      setSelectedIndexes(
+        selectedIndexes.length === images.length ? [] : images.map((_, i) => i)
+      );
+    };
 
- const handleDeleteSelected = () => {
-  onDeleteMultiple(selectedIndexes);
-  setSelectedIndexes([]);
-  setSelectMode(false);
-  if (images.length - selectedIndexes.length <= LIMIT) setShowAllDialog(false);
-};
+    const handleDeleteSelected = () => {
+      onDeleteMultiple(selectedIndexes);
+      setSelectedIndexes([]);
+      setSelectMode(false);
+      if (images.length - selectedIndexes.length <= LIMIT) setShowAllDialog(false);
+    };
 
-  const openDialog = () => {
-    setSelectMode(false);
-    setSelectedIndexes([]);
-    setShowAllDialog(true);
-  };
+    const openDialog = () => {
+      setSelectMode(false);
+      setSelectedIndexes([]);
+      setShowAllDialog(true);
+    };
 
-  return (
-    <div className="space-y-3 w-full">
-      {/* Header row */}
-      <div className="flex items-center justify-between">
-        <Label className="text-base font-medium">
-          {label}
-          {images.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
-              ({images.length} รูป)
-            </span>
-          )}
-        </Label>
-        <label className="block">
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => handleImagePartUpload(e, partType)}
-            disabled={uploadingParts[partType]}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="cursor-pointer"
-            disabled={uploadingParts[partType]}
-            asChild
-          >
-            <span>{uploadingParts[partType] ? "กำลังอัปโหลด..." : "+ เพิ่มรูป"}</span>
-          </Button>
-        </label>
-      </div>
-
-      {/* Thumbnail preview (max LIMIT) */}
-      {images.length > 0 && (
-        <>
-          <div className="flex flex-row flex-wrap gap-3">
-            {visibleImages.map((imageUrl, idx) => (
-              <div
-                key={idx}
-                className="relative group rounded-lg overflow-hidden bg-muted/30 w-24 h-24 shrink-0"
-              >
-                <img
-                  src={imageUrl}
-                  alt={`${label}-${idx}`}
-                  className="w-full h-full object-cover"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => onDeleteClick(idx)}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-          </div>
-
-          {images.length > LIMIT && (
-            <button
+    return (
+      <div className="space-y-3 w-full">
+        {/* Header row */}
+        <div className="flex items-center justify-between">
+          <Label className="text-base font-medium">
+            {label}
+            {images.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({images.length} รูป)
+              </span>
+            )}
+          </Label>
+          <label className="block">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => handleImagePartUpload(e, partType)}
+              disabled={uploadingParts[partType]}
+            />
+            <Button
               type="button"
-              onClick={openDialog}
-              className="text-sm text-primary hover:underline font-medium"
+              variant="outline"
+              size="sm"
+              className="cursor-pointer"
+              disabled={uploadingParts[partType]}
+              asChild
             >
-              แสดงรูปภาพเพิ่มเติม {hiddenCount} รูป
-            </button>
-          )}
-        </>
-      )}
+              <span>{uploadingParts[partType] ? "กำลังอัปโหลด..." : "+ เพิ่มรูป"}</span>
+            </Button>
+          </label>
+        </div>
 
-      {/* Dialog — all images */}
-      <Dialog
-        open={showAllDialog}
-        onOpenChange={(open) => {
-          setShowAllDialog(open);
-          if (!open) {
-            setSelectMode(false);
-            setSelectedIndexes([]);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden gap-0">
-          {/* Dialog header — title only */}
-          <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle className="text-lg font-bold">
-              {label} ทั้งหมด ({images.length} รูป)
-            </DialogTitle>
-          </DialogHeader>
-
-          {/* Image grid */}
-          <div className="p-6 overflow-y-auto max-h-[65vh]">
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {images.map((imageUrl, idx) => {
-                const isSelected = selectedIndexes.includes(idx);
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => selectMode && toggleSelect(idx)}
-                    className={[
-                      "relative group rounded-lg overflow-hidden bg-muted/30 aspect-square",
-                      selectMode ? "cursor-pointer" : "",
-                      isSelected ? "ring-2 ring-destructive" : "",
-                    ].join(" ")}
+        {/* Thumbnail preview (max LIMIT) */}
+        {images.length > 0 && (
+          <>
+            <div className="flex flex-row flex-wrap gap-3">
+              {visibleImages.map((imageUrl, idx) => (
+                <div
+                  key={idx}
+                  className="relative group rounded-xl overflow-hidden bg-muted/30 w-24 h-24 shrink-0 border-2 border-border shadow-sm hover:border-primary/50 transition-colors"
+                >
+                  <img
+                    src={imageUrl}
+                    alt={`${label}-${idx}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                    onClick={() => onDeleteClick(idx)}
                   >
-                    <img
-                      src={imageUrl}
-                      alt={`${label}-${idx}`}
-                      className="w-full h-full object-cover"
-                    />
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
 
-                    {/* Hover/select overlay */}
+            {images.length > LIMIT && (
+              <button
+                type="button"
+                onClick={openDialog}
+                className="text-sm text-primary underline font-medium"
+              >
+                แสดงรูปภาพเพิ่มเติม {hiddenCount} รูป
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Dialog — all images */}
+        <Dialog
+          open={showAllDialog}
+          onOpenChange={(open) => {
+            setShowAllDialog(open);
+            if (!open) {
+              setSelectMode(false);
+              setSelectedIndexes([]);
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden gap-0">
+            <DialogHeader className="px-6 py-4 border-b">
+              <DialogTitle className="text-lg font-bold">
+                {label} ทั้งหมด ({images.length} รูป)
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="p-6 overflow-y-auto max-h-[65vh]">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {images.map((imageUrl, idx) => {
+                  const isSelected = selectedIndexes.includes(idx);
+                  return (
                     <div
+                      key={idx}
+                      onClick={() => selectMode && toggleSelect(idx)}
                       className={[
-                        "absolute inset-0 transition-colors",
-                        isSelected
-                          ? "bg-destructive/25"
-                          : "bg-black/0 group-hover:bg-black/15",
+                        "relative group rounded-xl overflow-hidden bg-muted/30 aspect-square border-2 border-border shadow-sm",
+                        selectMode ? "cursor-pointer" : "",
+                        isSelected ? "ring-2 ring-destructive border-destructive" : "hover:border-primary/50 transition-colors",
                       ].join(" ")}
-                    />
+                    >
+                      <img
+                        src={imageUrl}
+                        alt={`${label}-${idx}`}
+                        className="w-full h-full object-cover"
+                      />
 
-                    {/* Checkbox circle (select mode) */}
-                    {selectMode && (
                       <div
                         className={[
-                          "absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                          "absolute inset-0 transition-colors",
                           isSelected
-                            ? "bg-destructive border-destructive"
-                            : "bg-white/80 border-white",
+                            ? "bg-destructive/25"
+                            : "bg-black/0 group-hover:bg-black/15",
                         ].join(" ")}
-                      >
-                        {isSelected && <X className="h-3 w-3 text-white" />}
-                      </div>
-                    )}
+                      />
 
-                    {/* Number badge (normal mode) */}
-                    {!selectMode && (
-                      <div className="absolute top-1.5 left-1.5 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-full">
-                        {idx + 1}
-                      </div>
-                    )}
+                      {selectMode && (
+                        <div
+                          className={[
+                            "absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                            isSelected
+                              ? "bg-destructive border-destructive"
+                              : "bg-white/80 border-white",
+                          ].join(" ")}
+                        >
+                          {isSelected && <X className="h-3 w-3 text-white" />}
+                        </div>
+                      )}
 
-                    {/* Delete button (normal mode, hover) */}
-                    {!selectMode && (
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteClick(idx);
-                          if (images.length - 1 <= LIMIT) setShowAllDialog(false);
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
+                      {!selectMode && (
+                        <div className="absolute top-1.5 left-1.5 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-full">
+                          {idx + 1}
+                        </div>
+                      )}
+
+                      {!selectMode && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteClick(idx);
+                            if (images.length - 1 <= LIMIT) setShowAllDialog(false);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          {/* Footer */}
-          <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-between gap-2">
-            {selectMode ? (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleSelectAll}
-                  className="text-sm text-primary hover:underline whitespace-nowrap"
-                >
-                  {selectedIndexes.length === images.length
-                    ? "ยกเลิกทั้งหมด"
-                    : "เลือกทั้งหมด"}
-                </button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  disabled={selectedIndexes.length === 0}
-                  onClick={handleDeleteSelected}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />
-                  ลบ{selectedIndexes.length > 0 ? ` ${selectedIndexes.length} รูป` : ""}
-                </Button>
+            <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-between gap-2">
+              {selectMode ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSelectAll}
+                    className="text-sm text-primary hover:underline whitespace-nowrap"
+                  >
+                    {selectedIndexes.length === images.length
+                      ? "ยกเลิกทั้งหมด"
+                      : "เลือกทั้งหมด"}
+                  </button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    disabled={selectedIndexes.length === 0}
+                    onClick={handleDeleteSelected}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    ลบ{selectedIndexes.length > 0 ? ` ${selectedIndexes.length} รูป` : ""}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectMode(false);
+                      setSelectedIndexes([]);
+                    }}
+                  >
+                    ยกเลิก
+                  </Button>
+                </div>
+              ) : (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setSelectMode(false);
-                    setSelectedIndexes([]);
-                  }}
+                  onClick={() => setSelectMode(true)}
                 >
-                  ยกเลิก
+                  เลือกเพื่อลบ
                 </Button>
-              </div>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectMode(true)}
-              >
-                เลือกเพื่อลบ
-              </Button>
-            )}
+              )}
 
-            <Button variant="outline" onClick={() => setShowAllDialog(false)}>
-              ปิด
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
+              <Button variant="outline" onClick={() => setShowAllDialog(false)}>
+                ปิด
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  };
 
   const handleSave = async () => {
     if (!formData.id || !formData.name || !formData.scientificName || !formData.category) {
@@ -1893,261 +1866,258 @@ const handleDeleteMultiplePartImages = async (
             <p className="text-sm text-muted-foreground">เพิ่มข้อมูลพรรณไม้ใหม่เข้าระบบ</p>
           </DialogHeader>
 
-        <div className="p-6 overflow-y-auto max-h-[75vh] space-y-5">
-          <div className="space-y-2">
-            <Label>ID (รหัสประจำต้น)<span className="text-destructive">*</span></Label>
-            <Input
-              placeholder="เช่น Taku, Praduban"
-              value={formData.id || ""}
-              onChange={(e) => handleChange("id", e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">ใช้ภาษาอังกฤษเท่านั้น ขึ้นต้นด้วยตัวพิมพ์ใหญ่ และห้ามเว้นวรรคหรือใช้สัญลักษณ์พิเศษ</p>
-          </div>
-
-          <div className="flex gap-4 items-start">
-            <div className="w-24 h-24 shrink-0 rounded-xl border flex items-center justify-center bg-muted overflow-hidden">
-              {mainPreview ? (
-                <img src={mainPreview} alt="Main Preview" className="w-full h-full object-cover" />
-              ) : formData.image && typeof formData.image === "string" ? (
-                <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-              ) : (
-                <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
-              )}
+          <div className="p-6 overflow-y-auto max-h-[75vh] space-y-5">
+            <div className="space-y-2">
+              <Label>ID (รหัสประจำต้น)<span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="เช่น Taku, Praduban"
+                value={formData.id || ""}
+                onChange={(e) => handleChange("id", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">ใช้ภาษาอังกฤษเท่านั้น ขึ้นต้นด้วยตัวพิมพ์ใหญ่ และห้ามเว้นวรรคหรือใช้สัญลักษณ์พิเศษ</p>
             </div>
-            <div className="flex-1 space-y-2">
-              <Label>รูปภาพหลัก</Label>
-              <div className="flex gap-2">
-                <label className="flex-1 block">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleMainImageUpload}
-                    disabled={uploadingMain}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full cursor-pointer"
-                    disabled={uploadingMain}
-                    asChild
-                  >
-                    <span>
-                      {uploadingMain ? "กำลังอัปโหลด..." : "เลือกรูป"}
-                    </span>
-                  </Button>
-                </label>
-                {formData.image && typeof formData.image === "string" && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDeleteMainImage}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+
+            <div className="flex gap-4 items-start">
+              <div className="w-24 h-24 shrink-0 rounded-xl border-2 border-border flex items-center justify-center bg-muted overflow-hidden shadow-sm">
+                {mainPreview ? (
+                  <img src={mainPreview} alt="Main Preview" className="w-full h-full object-cover" />
+                ) : formData.image && typeof formData.image === "string" ? (
+                  <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
                 )}
               </div>
+              <div className="flex-1 space-y-2">
+                <Label>รูปภาพหลัก</Label>
+                <div className="flex gap-2">
+                  <label className="flex-1 block">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleMainImageUpload}
+                      disabled={uploadingMain}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full cursor-pointer"
+                      disabled={uploadingMain}
+                      asChild
+                    >
+                      <span>
+                        {uploadingMain ? "กำลังอัปโหลด..." : "เลือกรูป"}
+                      </span>
+                    </Button>
+                  </label>
+                  {formData.image && typeof formData.image === "string" && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteMainImage}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label>ชื่อ <span className="text-destructive">*</span></Label>
-            <Input
-              value={formData.name || ""}
-              onChange={(e) => handleChange("name", e.target.value)}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label>ชื่อ <span className="text-destructive">*</span></Label>
+              <Input
+                value={formData.name || ""}
+                onChange={(e) => handleChange("name", e.target.value)}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>ชื่อวิทยาศาสตร์ <span className="text-destructive">*</span></Label>
-            <Input
-              value={formData.scientificName || ""}
-              onChange={(e) => handleChange("scientificName", e.target.value)}
-              className="italic"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label>ชื่อวิทยาศาสตร์ <span className="text-destructive">*</span></Label>
+              <Input
+                value={formData.scientificName || ""}
+                onChange={(e) => handleChange("scientificName", e.target.value)}
+                className="italic"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>คำอธิบายสั้น</Label>
-            <Textarea
-              className="resize-none h-16"
-              placeholder="คำอธิบายสั้น ๆ (1-2 บรรทัด)"
-              value={formData.shortDescription || ""}
-              onChange={(e) => handleChange("shortDescription", e.target.value)}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label>คำอธิบายสั้น</Label>
+              <Textarea
+                className="resize-none h-16"
+                placeholder="คำอธิบายสั้น ๆ (1-2 บรรทัด)"
+                value={formData.shortDescription || ""}
+                onChange={(e) => handleChange("shortDescription", e.target.value)}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>หมวดหมู่ <span className="text-destructive">*</span></Label>
-            <Select
-              value={formData.category || ""}
-              onValueChange={(val) => handleChange("category", val)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="เลือกหมวดหมู่" />
-              </SelectTrigger>
-              <SelectContent>
-                {(categoryList && categoryList.length > 0 ? categoryList : categories).map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
+            <div className="space-y-2">
+              <Label>หมวดหมู่ <span className="text-destructive">*</span></Label>
+              <Select
+                value={formData.category || ""}
+                onValueChange={(val) => handleChange("category", val)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกหมวดหมู่" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(categoryList && categoryList.length > 0 ? categoryList : categories).map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* ── Part images ── */}
+            <div className="space-y-3">
+              <Label className="font-semibold text-base">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</Label>
+              <div className="grid grid-cols-1 gap-4">
+                {(
+                  [
+                    { partType: "leaf" as const, label: "รูปใบ" },
+                    { partType: "flower" as const, label: "รูปดอก" },
+                    { partType: "fruit" as const, label: "รูปผล" },
+                    { partType: "bark" as const, label: "รูปเปลือก" },
+                  ] as const
+                ).map(({ partType, label }) => (
+                  <div
+                    key={partType}
+                    className="rounded-xl border-2 border-border bg-muted/20 p-4 shadow-sm"
+                  >
+                    <PartImageUploader
+                      partType={partType}
+                      label={label}
+                      onDeleteClick={(idx) => setPendingDelete({ partType, index: idx })}
+                      onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages(partType, indexes)}
+                    />
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="font-semibold text-base">รูปถ่ายส่วนต่าง ๆ ของพรรณไม้</Label>
-            <div className="grid grid-cols-1 gap-6">
-              <PartImageUploader
-  partType="leaf"
-  label="รูปใบ"
-  onDeleteClick={(idx) => setPendingDelete({ partType: "leaf", index: idx })}
-  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("leaf", indexes)}
-/>
-<PartImageUploader
-  partType="flower"
-  label="รูปดอก"
-  onDeleteClick={(idx) => setPendingDelete({ partType: "flower", index: idx })}
-  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("flower", indexes)}
-/>
-<PartImageUploader
-  partType="fruit"
-  label="รูปผล"
-  onDeleteClick={(idx) => setPendingDelete({ partType: "fruit", index: idx })}
-  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("fruit", indexes)}
-/>
-<PartImageUploader
-  partType="bark"
-  label="รูปเปลือก"
-  onDeleteClick={(idx) => setPendingDelete({ partType: "bark", index: idx })}
-  onDeleteMultiple={(indexes) => handleDeleteMultiplePartImages("bark", indexes)}
-/>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label>รายละเอียด</Label>
-            <Textarea
-              className="resize-none h-24"
-              placeholder="ลักษณะเด่น สรรพคุณ การดูแล ฯลฯ"
-              value={formData.description || ""}
-              onChange={(e) => handleChange("description", e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>ความสูง</Label>
-            <Input
-              value={formData.characteristics?.height || ""}
-              onChange={(e) => handleCharacteristicChange("height", e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
-              <Label>ลักษณะของใบ</Label>
+              <Label>รายละเอียด</Label>
               <Textarea
-                className="resize-none h-16"
-                value={formData.characteristics?.leaf || ""}
-                onChange={(e) => handleCharacteristicChange("leaf", e.target.value)}
+                className="resize-none h-24"
+                placeholder="ลักษณะเด่น สรรพคุณ การดูแล ฯลฯ"
+                value={formData.description || ""}
+                onChange={(e) => handleChange("description", e.target.value)}
               />
             </div>
+
             <div className="space-y-2">
-              <Label>ลักษณะของดอกไม้</Label>
-              <Textarea
-                className="resize-none h-16"
-                value={formData.characteristics?.flower || ""}
-                onChange={(e) => handleCharacteristicChange("flower", e.target.value)}
+              <Label>ความสูง</Label>
+              <Input
+                value={formData.characteristics?.height || ""}
+                onChange={(e) => handleCharacteristicChange("height", e.target.value)}
               />
             </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label>ลักษณะของใบ</Label>
+                <Textarea
+                  className="resize-none h-16"
+                  value={formData.characteristics?.leaf || ""}
+                  onChange={(e) => handleCharacteristicChange("leaf", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>ลักษณะของดอกไม้</Label>
+                <Textarea
+                  className="resize-none h-16"
+                  value={formData.characteristics?.flower || ""}
+                  onChange={(e) => handleCharacteristicChange("flower", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>ลักษณะของผล</Label>
+                <Textarea
+                  className="resize-none h-16"
+                  value={formData.characteristics?.fruit || ""}
+                  onChange={(e) => handleCharacteristicChange("fruit", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>ลักษณะของเปลือก</Label>
+                <Textarea
+                  className="resize-none h-16"
+                  value={formData.characteristics?.bark || ""}
+                  onChange={(e) => handleCharacteristicChange("bark", e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label>ลักษณะของผล</Label>
+              <Label>นิเวศวิทยาและการกระจายพันธุ์</Label>
               <Textarea
-                className="resize-none h-16"
-                value={formData.characteristics?.fruit || ""}
-                onChange={(e) => handleCharacteristicChange("fruit", e.target.value)}
+                className="resize-none h-20"
+                placeholder="อธิบายข้อมูลเกี่ยวกับสภาพแวดล้อม ที่อยู่อาศัย และพื้นที่ที่พบของพรรณไม้"
+                value={formData.ecology || ""}
+                onChange={(e) => handleChange("ecology", e.target.value)}
               />
             </div>
+
             <div className="space-y-2">
-              <Label>ลักษณะของเปลือก</Label>
+              <Label>ประโยชน์/โทษ</Label>
               <Textarea
-                className="resize-none h-16"
-                value={formData.characteristics?.bark || ""}
-                onChange={(e) => handleCharacteristicChange("bark", e.target.value)}
+                className="resize-none h-20"
+                placeholder="ประโยชน์ที่ได้รับจากพรรณไม้ และความเสี่ยงหรือโทษที่อาจเกิดขึ้น"
+                value={formData.benefits || ""}
+                onChange={(e) => handleChange("benefits", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>สถานะการอนุรักษ์ IUCN Red List 2022</Label>
+              <Select
+                value={formData.iucnStatus || ""}
+                onValueChange={(val) => handleChange("iucnStatus", val)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกสถานะการอนุรักษ์" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Extinct">สูญพันธุ์ (Extinct - EX)</SelectItem>
+                  <SelectItem value="Extinct in the Wild">สูญพันธุ์ในถิ่นกำเนิด (Extinct in the Wild - EW)</SelectItem>
+                  <SelectItem value="Critically Endangered">วิกฤตอย่างยิ่ง (Critically Endangered - CR)</SelectItem>
+                  <SelectItem value="Endangered">วิกฤต (Endangered - EN)</SelectItem>
+                  <SelectItem value="Vulnerable">เสี่ยงวิกฤต (Vulnerable - VU)</SelectItem>
+                  <SelectItem value="Near Threatened">ใกล้เสี่ยงวิกฤต (Near Threatened - NT)</SelectItem>
+                  <SelectItem value="Least Concern">ไม่เสี่ยง (Least Concern - LC)</SelectItem>
+                  <SelectItem value="Data Deficient">ข้อมูลไม่พอ (Data Deficient - DD)</SelectItem>
+                  <SelectItem value="Not Evaluated">ยังไม่ได้ประเมิน (Not Evaluated - NE)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>อ้างอิง</Label>
+              <Textarea
+                className="resize-none h-20"
+                placeholder="แหล่งที่มาข้อมูล และแหล่งที่มาของภาพ (สามารถระบุ URL หรือชื่อแหล่งที่มา)"
+                value={formData.reference || ""}
+                onChange={(e) => handleChange("reference", e.target.value)}
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>นิเวศวิทยาและการกระจายพันธุ์</Label>
-            <Textarea
-              className="resize-none h-20"
-              placeholder="อธิบายข้อมูลเกี่ยวกับสภาพแวดล้อม ที่อยู่อาศัย และพื้นที่ที่พบของพรรณไม้"
-              value={formData.ecology || ""}
-              onChange={(e) => handleChange("ecology", e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>ประโยชน์/โทษ</Label>
-            <Textarea
-              className="resize-none h-20"
-              placeholder="ประโยชน์ที่ได้รับจากพรรณไม้ และความเสี่ยงหรือโทษที่อาจเกิดขึ้น"
-              value={formData.benefits || ""}
-              onChange={(e) => handleChange("benefits", e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>สถานะการอนุรักษ์ IUCN Red List 2022</Label>
-            <Select
-              value={formData.iucnStatus || ""}
-              onValueChange={(val) => handleChange("iucnStatus", val)}
+          <DialogFooter className="px-6 py-4 border-t bg-muted/30 flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose} disabled={isLoading || Object.values(uploadingParts).some(v => v) || uploadingMain}>
+              ยกเลิก
+            </Button>
+            <Button
+              className="bg-[#1a5f4a] hover:bg-[#1a5f4a] text-white"
+              onClick={handleSave}
+              disabled={isLoading || Object.values(uploadingParts).some(v => v) || uploadingMain}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="เลือกสถานะการอนุรักษ์" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Extinct">สูญพันธุ์ (Extinct - EX)</SelectItem>
-                <SelectItem value="Extinct in the Wild">สูญพันธุ์ในถิ่นกำเนิด (Extinct in the Wild - EW)</SelectItem>
-                <SelectItem value="Critically Endangered">วิกฤตอย่างยิ่ง (Critically Endangered - CR)</SelectItem>
-                <SelectItem value="Endangered">วิกฤต (Endangered - EN)</SelectItem>
-                <SelectItem value="Vulnerable">เสี่ยงวิกฤต (Vulnerable - VU)</SelectItem>
-                <SelectItem value="Near Threatened">ใกล้เสี่ยงวิกฤต (Near Threatened - NT)</SelectItem>
-                <SelectItem value="Least Concern">ไม่เสี่ยง (Least Concern - LC)</SelectItem>
-                <SelectItem value="Data Deficient">ข้อมูลไม่พอ (Data Deficient - DD)</SelectItem>
-                <SelectItem value="Not Evaluated">ยังไม่ได้ประเมิน (Not Evaluated - NE)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>อ้างอิง</Label>
-            <Textarea
-              className="resize-none h-20"
-              placeholder="แหล่งที่มาข้อมูล และแหล่งที่มาของภาพ (สามารถระบุ URL หรือชื่อแหล่งที่มา)"
-              value={formData.reference || ""}
-              onChange={(e) => handleChange("reference", e.target.value)}
-            />
-          </div>
-        </div>
-
-        <DialogFooter className="px-6 py-4 border-t bg-muted/30 flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose} disabled={isLoading || Object.values(uploadingParts).some(v => v) || uploadingMain}>
-            ยกเลิก
-          </Button>
-          <Button 
-            className="bg-[#1a5f4a] hover:bg-[#1a5f4a] text-white" 
-            onClick={handleSave}
-            disabled={isLoading || Object.values(uploadingParts).some(v => v) || uploadingMain}
-          >
-            {isLoading ? "กำลังบันทึก..." : "เพิ่มพรรณไม้"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+              {isLoading ? "กำลังบันทึก..." : "เพิ่มพรรณไม้"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
@@ -2168,7 +2138,6 @@ const Admin = () => {
   const [newCategory, setNewCategory] = useState("");
   const [editingCategory, setEditingCategory] = useState<{ index: number; name: string } | null>(null);
 
-  // Define useMemo BEFORE early returns
   const filteredPlants = useMemo(() => {
     return plants.filter((plant) => {
       const matchSearch =
@@ -2180,7 +2149,6 @@ const Admin = () => {
     });
   }, [plants, searchTerm, selectedCategory]);
 
-  // Check authentication
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       navigate("/admin-login");
@@ -2197,7 +2165,6 @@ const Admin = () => {
     }
   };
 
-  // Show loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -2209,15 +2176,13 @@ const Admin = () => {
     );
   }
 
-  // Show nothing if not authenticated (will redirect)
   if (!isAuthenticated) {
     return null;
   }
 
-  // Category management handlers
   const handleAddCategory = async () => {
     if (!newCategory.trim()) return;
-    
+
     try {
       if (categoryList.includes(newCategory.trim())) {
         toast.error("หมวดหมู่นี้มีอยู่แล้ว", {
@@ -2226,7 +2191,7 @@ const Admin = () => {
         });
         return;
       }
-      
+
       await addCategory(newCategory.trim());
       setNewCategory("");
       toast.success("เพิ่มหมวดหมู่สำเร็จ", {
@@ -2244,11 +2209,11 @@ const Admin = () => {
 
   const handleUpdateCategory = async () => {
     if (!editingCategory) return;
-    
+
     try {
       const oldName = categoryList[editingCategory.index];
       const newName = editingCategory.name.trim();
-      
+
       if (!newName) return;
       if (oldName === newName) {
         setEditingCategory(null);
@@ -2261,7 +2226,7 @@ const Admin = () => {
         });
         return;
       }
-      
+
       await updateCategory(oldName, newName);
       setEditingCategory(null);
       toast.success("อัปเดตหมวดหมู่สำเร็จ", {
@@ -2287,7 +2252,7 @@ const Admin = () => {
         });
         return;
       }
-      
+
       await deleteCategory(catName);
       toast.success(`ลบหมวดหมู่ "${catName}" แล้ว`, {
         position: "bottom-right",
@@ -2324,8 +2289,8 @@ const Admin = () => {
           {activeTab === "dashboard" && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <StatCard 
-                  label="วันที่อัปเดตล่าสุด" 
+                <StatCard
+                  label="วันที่อัปเดตล่าสุด"
                   value={
                     plants.length > 0 && plants.some(p => p.updatedAt)
                       ? new Date(Math.max(...plants.filter(p => p.updatedAt).map(p => p.updatedAt || 0))).toLocaleDateString("th-TH", {
@@ -2334,17 +2299,17 @@ const Admin = () => {
                           day: "numeric",
                         })
                       : "ไม่มีข้อมูล"
-                  } 
-                  hint="ของข้อมูลพรรณไม้" 
-                  icon={ImageIcon} 
-                  tone="primary" 
+                  }
+                  hint="ของข้อมูลพรรณไม้"
+                  icon={ImageIcon}
+                  tone="primary"
                 />
-                <StatCard 
-                  label="จำนวนหมวดหมู่" 
-                  value={(categoryList && categoryList.length > 0 ? categoryList.length : 0)} 
-                  hint="ในระบบทั้งหมด" 
-                  icon={Target} 
-                  tone="info" 
+                <StatCard
+                  label="จำนวนหมวดหมู่"
+                  value={(categoryList && categoryList.length > 0 ? categoryList.length : 0)}
+                  hint="ในระบบทั้งหมด"
+                  icon={Target}
+                  tone="info"
                 />
                 <StatCard label="พรรณไม้" value={plants.length} hint="ในระบบทั้งหมด" icon={Leaf} tone="accent" />
               </div>
@@ -2373,8 +2338,8 @@ const Admin = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {(categoryList && categoryList.length > 0 ? categoryList : categories).map((cat) => (
-                          <SelectItem 
-                            key={cat} 
+                          <SelectItem
+                            key={cat}
                             value={cat}
                             className="cursor-pointer data-[state=checked]:text-foreground data-[state=checked]:font-medium mb-1"
                           >
@@ -2383,7 +2348,7 @@ const Admin = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button 
+                    <Button
                       className="w-full lg:w-auto bg-[#1a5f4a] hover:bg-[#1a5f4a] text-white font-semibold gap-2 h-11 shrink-0"
                       onClick={() => setIsAddModalOpen(true)}
                     >
@@ -2398,7 +2363,7 @@ const Admin = () => {
                 <CardHeader className="pb-3 flex flex-row items-center justify-between">
                   <CardTitle className="font-display text-lg">รายการพรรณไม้</CardTitle>
                   <Badge variant="secondary" className="font-mono">
-                   ทั้งหมด {filteredPlants.length} รายการ
+                    ทั้งหมด {filteredPlants.length} รายการ
                   </Badge>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -2469,20 +2434,12 @@ const Admin = () => {
                                                 await removePlant(plant.id);
                                                 toast.success(`ลบ ${plant.name} แล้ว`, {
                                                   position: "bottom-right",
-                                                  style: {
-                                                    background: "#FAE251",
-                                                    color: "#000",
-                                                    borderColor: "#F0D642",
-                                                  },
+                                                  style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
                                                 });
                                               } catch (error) {
                                                 toast.error(`เกิดข้อผิดพลาดในการลบ ${plant.name}`, {
                                                   position: "bottom-right",
-                                                  style: {
-                                                    background: "#FAE251",
-                                                    color: "#000",
-                                                    borderColor: "#F0D642",
-                                                  },
+                                                  style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
                                                 });
                                               }
                                             }}
@@ -2531,10 +2488,7 @@ const Admin = () => {
                               </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                  >
+                                  <Button size="sm" variant="destructive">
                                     <Trash2 className="h-3.5 w-3.5 mr-1" />
                                     ลบ
                                   </Button>
@@ -2554,20 +2508,12 @@ const Admin = () => {
                                           await removePlant(plant.id);
                                           toast.success(`ลบ ${plant.name} แล้ว`, {
                                             position: "bottom-right",
-                                            style: {
-                                              background: "#FAE251",
-                                              color: "#000",
-                                              borderColor: "#F0D642",
-                                            },
+                                            style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
                                           });
                                         } catch (error) {
                                           toast.error(`เกิดข้อผิดพลาดในการลบ ${plant.name}`, {
                                             position: "bottom-right",
-                                            style: {
-                                              background: "#FAE251",
-                                              color: "#000",
-                                              borderColor: "#F0D642",
-                                            },
+                                            style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
                                           });
                                         }
                                       }}
@@ -2720,7 +2666,8 @@ const Admin = () => {
       </div>
 
       <MobileTabBar active={activeTab} onChange={setActiveTab} />
-      <EditPlantModal 
+
+      <EditPlantModal
         plant={editingPlant}
         isOpen={!!editingPlant}
         onClose={() => setEditingPlant(null)}
@@ -2731,25 +2678,18 @@ const Admin = () => {
               await updatePlant(updatedPlant);
               toast.success("อัปเดตข้อมูลพรรณไม้สำเร็จ", {
                 position: "bottom-right",
-                style: {
-                  background: "#FAE251",
-                  color: "#000",
-                  borderColor: "#F0D642",
-                },
+                style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
               });
             } catch (error) {
               toast.error("เกิดข้อผิดพลาดในการอัปเดต", {
                 position: "bottom-right",
-                style: {
-                  background: "#FAE251",
-                  color: "#000",
-                  borderColor: "#F0D642",
-                },
+                style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
               });
             }
           }
         }}
       />
+
       <AddPlantModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -2761,21 +2701,13 @@ const Admin = () => {
               await addPlant(newPlant);
               toast.success("เพิ่มพรรณไม้สำเร็จ", {
                 position: "bottom-right",
-                style: {
-                  background: "#FAE251",
-                  color: "#000",
-                  borderColor: "#F0D642",
-                },
+                style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
               });
             } catch (error) {
               console.error("Error adding plant:", error);
               toast.error("เกิดข้อผิดพลาดในการเพิ่มข้อมูล", {
                 position: "bottom-right",
-                style: {
-                  background: "#FAE251",
-                  color: "#000",
-                  borderColor: "#F0D642",
-                },
+                style: { background: "#FAE251", color: "#000", borderColor: "#F0D642" },
               });
             } finally {
               setIsSaving(false);
